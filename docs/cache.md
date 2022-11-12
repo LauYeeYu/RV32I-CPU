@@ -7,7 +7,7 @@ only, while data cache can be either written or read.
 
 ## Cache Module
 
-The Cache module is in `src/cache.v`.
+The Cache module is located at `src/cache.v`.
 
 Cache module, linked to RAM is the only way to access memory. Cache module
 have two submodule - [`icache`](#instruction-cache) and
@@ -71,6 +71,8 @@ TODO: add behaviour about icache and dcache
 
 ## Instruction Cache
 
+The Instruction Cache module is located at `src/icache.v`.
+
 Since instruction cache needs absolutely minimum time to access, it is
 designed to be direct-mapped.
 
@@ -115,6 +117,8 @@ incorrect, the `miss` signal will be high, and the
 through `memDataIn` (`memDataValid` is set high then).
 
 ## Data Cache
+
+The Data Cache module is located at `src/dcache.v`.
 
 Data cache is designed to be 2-way set associative. The Data Cache module
 si capable of handling both read and write requests.
