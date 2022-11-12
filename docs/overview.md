@@ -5,10 +5,12 @@
 ```mermaid
 graph TD
 Mem[[Memeory]]
-DCache(Data Cache)
+subgraph Cache
+  ICache[Instruction Cache]
+  DCache[Data Cache]
+end
 InstructionUnit[Instruction Unit]
-LSBuf[Load / Store Buffer]
-ICache(Instruction Cache)
+LSBuf[Load & Store Buffer]
 Predictor[Predictor]
 PC(PC)
 DRegs(Data Registers)
@@ -50,30 +52,56 @@ RoB --> Predictor
 
 Cache includes instruction cache (icache) and data cache (dcache).
 
-In this design, every data is read from cache. Instruction cache is read only, while data cache can be either written or read.
+In this design, every data is read from cache. Instruction cache is read only,
+while data cache can be either written or read.
+
+See the [document for Cache](cache.md) for more details.
 
 ### Instruction Unit
 
-The instruction unit fetches and decodes the instruction at the addression stored in PC.
+The instruction unit fetches and decodes the instruction at the address
+stored in PC.
+
+See the [document for Instruction Unit](instruction_unit.md) for more details.
 
 ### Predictor
 
-Predictor predicts which branch will probably be taken when encounters branch statement. [Reorder buffer](#reorder-buffer) gives predictor data to predict.
+Predictor predicts which branch will probably be taken when encounters branch
+statement. [Reorder buffer](#reorder-buffer) gives predictor data to predict.
 
-### Load / Store Buffer
+See the [document for Predictor](predictor.md) for more details.
 
-Load / Store Buffer is used to commit changes to memory. Since the only way to access memory is to use the cache, these commits is actually pushed into cache.
+### Load & Store Buffer
+
+Load & Store Buffer is used to commit changes to memory. Since the only way
+to access memory is to use the cache, these commits is actually pushed into
+cache.
+
+See the [document for Load & Store Buffer](load_store_buffer.md) for more
+details.
 
 ### Reorder Buffer
 
-The reorder buffer (RoB) is a buffer that track the state of instructions that are not yet committed.
+The reorder buffer (RoB) is a buffer that track the states of instructions
+that have not yet committed.
 
-The entries in RoB have two state - ready or not ready. If the first entry is ready, we commit this data into the register.
+The entries in RoB have two state - ready or not ready. If the first entry
+is ready, we commit this data into the register.
+
+See the [document for Reorder Buffer](reorder_buffer.md) for more details.
 
 ### Reservation Station
 
-The reservation station is a table that records the pending or executing instructions. When an instruction have just finished calculating, the data is sent to the RoB for committing this result.
+The reservation station is a table that records the pending or executing
+instructions. When an instruction have just finished calculating, the data
+is sent to the RoB for committing this result.
+
+See the [document for Reservation Station](reservation_station.md) for more
+details.
 
 ### Register File
 
-The register file is a table that records the latest dependency of each register.
+The register file is a table that records the latest dependency of each
+register.
+
+See the [document for Register File](register_file.md) for more details.
