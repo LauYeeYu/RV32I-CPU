@@ -1,2 +1,7 @@
+# Output files
 *.o
 *.vcd
+
+# IDE files
+.idea/
+.vscode/
