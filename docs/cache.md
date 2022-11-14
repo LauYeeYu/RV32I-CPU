@@ -33,7 +33,7 @@ module Cache
   input  wire                  clkIn,         // system clock (from CPU)
   input  wire                  resetIn,       // resetIn (from CPU)
   input  wire                  readyIn,       // ready signal (from CPU)
-  input  wire [ 7:0]           memIn,         // data from RAM
+  input  wire [7:0]            memIn,         // data from RAM
   input  wire                  instrInValid,  // instruction valid signal (Instruction Unit)
   input  wire [ADDR_WIDTH-1:0] instrAddrIn,   // instruction address (Instruction Unit)
   input  wire [1:0]            accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
@@ -42,7 +42,7 @@ module Cache
   input  wire [31:0]           dataIn,        // data to write (from Load Store Buffer)
   output wire                  readWriteOut,  // read/write select (read: 1, write: 0)
   output wire [ADDR_WIDTH-1:0] memAddr,       // memory address
-  output wire [ 7:0]           memOut,        // write data to RAM
+  output wire [7:0]            memOut,        // write data to RAM
   output wire                  instrOutValid, // instruction output valid signal (Instruction Unit)
   output wire [31:0]           instrOut,      // instruction (Instruction Unit)
   output wire                  dataOutValid,  // data output valid signal (Load Store Buffer)
@@ -141,7 +141,6 @@ module DCache
   input  wire                  resetIn,      // resetIn
   input  wire [1:0]            accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
   input  wire                  readWriteIn,  // read/write select (read: 1, write: 0)
-  input  wire                  dataInValid,  // data valid signal (Instruction Unit)
   input  wire [ADDR_WIDTH-1:0] dataAddrIn,   // instruction address (Instruction Unit)
   input  wire [31:0]           dataIn,       // data to write
   input  wire                  memDataValid, // data valid signal (Instruction Unit)
