@@ -86,23 +86,23 @@ through `memDataIn` (`memDataValid` is set high then).
 The interfaces are listed below:
 ```verilog
 module ICache
-#(
-  parameter ADDR_WIDTH = 17,
-  parameter BLOCK_WIDTH = 4,
-  parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
-  parameter CACHE_WIDTH = 8
-)
-(
-  input  wire                  resetIn,       // resetIn
-  input  wire                  instrInValid,  // instruction valid signal (Instruction Unit)
-  input  wire [ADDR_WIDTH-1:0] instrAddrIn,   // instruction address (Instruction Unit)
-  input  wire                  memDataValid,  // data valid signal (Instruction Unit)
-  input  wire [ADDR_WIDTH-1:0] memAddr,       // memory address
-  input  wire [BLOCK_SIZE-1:0] memDataIn,     // data to loaded from RAM
-  output wire                  miss,          // miss signal
-  output wire                  instrOutValid, // instruction output valid signal (Instruction Unit)
-  output wire [31:0]           instrOut       // instruction (Instruction Unit)
-);
+  #(
+    parameter ADDR_WIDTH = 17,
+    parameter BLOCK_WIDTH = 4,
+    parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
+    parameter CACHE_WIDTH = 8
+  )
+  (
+    input  wire                              resetIn,       // resetIn
+    input  wire                              instrInValid,  // instruction valid signal (Instruction Unit)
+    input  wire [ADDR_WIDTH-1:0]             instrAddrIn,   // instruction address (Instruction Unit)
+    input  wire                              memDataValid,  // data valid signal (Instruction Unit)
+    input  wire [ADDR_WIDTH-1:BLOCK_WIDTH-1] memAddr,       // memory address
+    input  wire [BLOCK_SIZE*8-1:0]           memDataIn,     // data to loaded from RAM
+    output wire                              miss,          // miss signal
+    output wire                              instrOutValid, // instruction output valid signal (Instruction Unit)
+    output wire [31:0]                       instrOut       // instruction (Instruction Unit)
+  );
 endmodule
 ```
 
@@ -138,18 +138,18 @@ module DCache
   parameter CACHE_WIDTH = 9
 )
 (
-  input  wire                  resetIn,      // resetIn
-  input  wire [1:0]            accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  input  wire                  readWriteIn,  // read/write select (read: 1, write: 0)
-  input  wire [ADDR_WIDTH-1:0] dataAddrIn,   // instruction address (Instruction Unit)
-  input  wire [31:0]           dataIn,       // data to write
-  input  wire                  memDataValid, // data valid signal (Instruction Unit)
-  input  wire [ADDR_WIDTH-1:0] memAddr,      // memory address
-  input  wire [BLOCK_SIZE-1:0] memDataIn,    // data to loaded from RAM
-  output wire                  miss,         // miss signal
-  output wire                  dataOutValid, // instruction output valid signal (Instruction Unit)
-  output wire [31:0]           dataOut,      // instruction (Instruction Unit)
-  output wire                  dataWriteSuc  // data write success signal (Load Store Buffer)
+  input  wire                              resetIn,      // resetIn
+  input  wire [1:0]                        accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
+  input  wire                              readWriteIn,  // read/write select (read: 1, write: 0)
+  input  wire [ADDR_WIDTH-1:0]             dataAddrIn,   // instruction address (Instruction Unit)
+  input  wire [31:0]                       dataIn,       // data to write
+  input  wire                              memDataValid, // data valid signal (Instruction Unit)
+  input  wire [ADDR_WIDTH-1:BLOCK_WIDTH-1] memAddr,      // memory address
+  input  wire [BLOCK_SIZE*8-1:0]           memDataIn,    // data to loaded from RAM
+  output wire                              miss,         // miss signal
+  output wire                              dataOutValid, // instruction output valid signal (Instruction Unit)
+  output wire [31:0]                       dataOut,      // instruction (Instruction Unit)
+  output wire                              dataWriteSuc  // data write success signal (Load Store Buffer)
 );
 endmodule
 ```
