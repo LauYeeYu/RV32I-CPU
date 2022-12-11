@@ -19,7 +19,7 @@ module ICache #(
 
 reg [CACHE_SIZE-1:0] cacheValid;
 reg [CACHE_SIZE-1:0] cacheTag  [ADDR_WIDTH-1:BLOCK_WIDTH+CACHE_WIDTH];
-reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE-1:0];
+reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE*8-1:0];
 
 reg [31:0] outReg;
 reg        missReg;
