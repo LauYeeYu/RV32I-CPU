@@ -45,6 +45,7 @@ module Cache #(
 
   // DCache output wires
   wire                            dcacheMiss;
+  wire [ADDR_WIDTH-1:BLOCK_WIDTH] dcacheMissAddr;
   wire                            dcacheReadWriteOut;
   wire [ADDR_WIDTH-1:BLOCK_WIDTH] dcacheMemAddrOut;
   wire [BLOCK_SIZE*8-1:0]         dcacheMemDataOut;
@@ -58,6 +59,7 @@ module Cache #(
   reg [BLOCK_SIZE*8-1:0]         buffer = 0;
   reg [BLOCK_WIDTH-1:0]          progress = 0;
   reg                            fromICache = 0; // DCache: 0, ICache: 1
+  reg                            acceptWriteReg;
 
   ICache #(
     .ADDR_WIDTH  (ADDR_WIDTH),
@@ -94,6 +96,8 @@ module Cache #(
     .memDataValid (dcacheMemInValid),
     .memAddr      (dcacheMemAddrIn),
     .memDataIn    (dcacheMemDataIn),
+    .acceptWrite  (acceptWriteReg),
+    .missAddr     (dcacheMissAddr),
     .miss         (dcacheMiss),
     .readWriteOut (dcacheReadWriteOut),
     .memAddrOut   (dcacheMemAddrOut),
@@ -109,6 +113,8 @@ module Cache #(
 
   // ICache and DCache control logic
   always @(posedge clkIn) begin
+    acceptWriteReg <= ~dcacheReadWriteOut;
+
     // If the memory has already been loaded
     if (resultReady) begin
       if (readWrite) begin // read
@@ -301,12 +307,12 @@ module Cache #(
     end else if (idle) begin
       idle <= 0;
     end else if (dcacheMiss) begin // dcache have the priority to use memory
-      readWrite  <= dcacheReadWriteOut;
-      fromICache <= 0;
-      loading    <= 1;
-      progress   <= 0;
+      readWrite      <= dcacheReadWriteOut;
+      fromICache     <= 0;
+      loading        <= 1;
+      progress       <= 0;
       if (dcacheReadWriteOut) begin // read
-        tag        <= dcacheMemAddrOut[ADDR_WIDTH-1:BLOCK_WIDTH];
+        tag        <= dcacheMissAddr;
         memAddrReg <= {tag, 4'b0000};
       end else begin // write
         buffer <= dcacheMemDataOut;
