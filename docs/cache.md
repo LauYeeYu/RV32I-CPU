@@ -51,6 +51,7 @@ module Cache #(
   output wire [31:0]           dataOut,       // data (Load Store Buffer)
   output wire                  dataWriteSuc   // data write success signal (Load Store Buffer)
 );
+endmodule
 ```
 
 If the `resetIn` signal is high, the Cache module will reset all stored cache.
@@ -121,8 +122,13 @@ through `memDataIn` (`memDataValid` is set high then).
 
 The Data Cache module is located at `src/dcache.v`.
 
-Data cache is designed to be 2-way set associative. The Data Cache module
-si capable of handling both read and write requests.
+Data cache is designed to be direct mapping. The Data Cache module is capable
+of handling both read and write requests.
+
+The data is always aligned to the lower end. To be specific, if the data is
+of byte size, the data is well at `[7:0]`. If the data is of half word size,
+the data is well at `[15:0]`. If the data is of word size, the data is well
+at `[31:0]`.
 
 Data Cache module will not synchronise with the memory as soon as possible,
 it will wait until the data must be removed from the cache. Therefore, when
@@ -138,21 +144,23 @@ module DCache #(
   parameter CACHE_WIDTH = 9,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
-  input  wire                            clkIn,         // system clock (from CPU)
+  input  wire                            clkIn,        // system clock (from CPU)
   input  wire                            resetIn,      // resetIn
   input  wire [1:0]                      accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
   input  wire                            readWriteIn,  // read/write select (read: 1, write: 0)
-  input  wire [ADDR_WIDTH-1:0]           dataAddrIn,   // instruction address (Instruction Unit)
+  input  wire [ADDR_WIDTH-1:0]           dataAddrIn,   // data address (Load/Store Buffer)
   input  wire [31:0]                     dataIn,       // data to write
   input  wire                            memDataValid, // data valid signal (Instruction Unit)
   input  wire [ADDR_WIDTH-1:BLOCK_WIDTH] memAddr,      // memory address
   input  wire [BLOCK_SIZE*8-1:0]         memDataIn,    // data to loaded from RAM
+  input  wire                            acceptWrite,  // write accept signal (Cache)
   output wire                            miss,         // miss signal (for input and output)
+  output wire [ADDR_WIDTH-1:BLOCK_WIDTH] missAddr,     // miss address (for input and output)
   output wire                            readWriteOut, // read/write select for mem (read: 1, write: 0)
   output wire [ADDR_WIDTH-1:BLOCK_WIDTH] memAddrOut,   // data address
   output wire [BLOCK_SIZE*8-1:0]         memOut,       // data to write
-  output wire                            dataOutValid, // instruction output valid signal (Instruction Unit)
-  output wire [31:0]                     dataOut,      // instruction (Instruction Unit)
+  output wire                            dataOutValid, // instruction output valid signal (Load/Store Buffer)
+  output wire [31:0]                     dataOut,      // instruction (Load/Store Buffer)
   output wire                            dataWriteSuc  // data write success signal (Load Store Buffer)
 );
 endmodule
@@ -179,3 +187,9 @@ If the data is not in the cache, the `miss` signal will be high, and the
 through `memDataIn` (`memDataValid` is set high then). After the data is put
 into the cache, the data cache will write the data to the cache, and set the
 `dataWriteSuc` high for one clock.
+
+On cache miss: If the block is dirty, the data cache will set the
+`readWriteOut` to high, and set the dirty tag to low first. Then, whether
+the block is dirty or not, the data cache will set the `readWriteOut` to low,
+and wait for the data from the [Cache module](#cache-module) through
+`memDataIn` (`memDataValid` is set high then).
