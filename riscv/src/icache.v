@@ -23,14 +23,16 @@ reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE-1:0];
 
 reg [31:0] outReg;
 reg        missReg;
+reg        instrOutValidReg;
 
 // Utensils
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] instrPos = instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] memPos = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
-wire hit = cacheValid[instrPos] & (cacheTag[instrPos] == instrAddrIn[ADDR_WIDTH-1:CACHE_WIDTH]);
+wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[ADDR_WIDTH-1:CACHE_WIDTH]);
 
-assign instrOut = outReg;
-assign miss     = missReg;
+assign instrOut      = outReg;
+assign miss          = missReg;
+assign instrOutValid = instrOutValidReg;
 
 always @(posedge clkIn) begin
   if (resetIn) begin
@@ -43,6 +45,7 @@ always @(posedge clkIn) begin
     end
     if (instrInValid) begin
       if (hit) begin
+        instrOutValidReg <= 1'b1;
         case (instrAddrIn[BLOCK_WIDTH-1:2])
           2'b00: outReg <= cacheData[instrPos][31:0];
           2'b01: outReg <= cacheData[instrPos][63:32];
