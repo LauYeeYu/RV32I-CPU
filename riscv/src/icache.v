@@ -24,6 +24,11 @@ reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE-1:0];
 reg [31:0] outReg;
 reg        missReg;
 
+// Utensils
+wire [CACHE_WIDTH-1:BLOCK_WIDTH] instrPos = instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
+wire [CACHE_WIDTH-1:BLOCK_WIDTH] memPos = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
+wire hit = cacheValid[instrPos] & (cacheTag[instrPos] == instrAddrIn[ADDR_WIDTH-1:CACHE_WIDTH]);
+
 assign instrOut = outReg;
 assign miss     = missReg;
 
@@ -32,19 +37,17 @@ always @(posedge clkIn) begin
     cacheValid <= {CACHE_SIZE{1'b0}};
   end else begin
     if (memDataValid) begin
-      cacheValid[memAddr[CACHE_WIDTH-1:BLOCK_WIDTH]] <= 1'b1;
-      cacheTag[memAddr[CACHE_WIDTH-1:BLOCK_WIDTH]]   <= memAddr[ADDR_WIDTH-1:CACHE_WIDTH];
-      cacheData[memAddr[CACHE_WIDTH-1:BLOCK_WIDTH]]  <= memDataIn;
+      cacheValid[memPos] <= 1'b1;
+      cacheTag  [memPos] <= memAddr[ADDR_WIDTH-1:CACHE_WIDTH];
+      cacheData [memPos] <= memDataIn;
     end
     if (instrInValid) begin
-      if (cacheValid[instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH]] &
-       (cacheTag[instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH]] == instrAddrIn[ADDR_WIDTH-1:CACHE_WIDTH])) begin
-       // Cache hit
+      if (hit) begin
         case (instrAddrIn[BLOCK_WIDTH-1:2])
-          2'b00: outReg <= cacheData[instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH]][31:0];
-          2'b01: outReg <= cacheData[instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH]][63:32];
-          2'b10: outReg <= cacheData[instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH]][95:64];
-          2'b11: outReg <= cacheData[instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH]][127:96];
+          2'b00: outReg <= cacheData[instrPos][31:0];
+          2'b01: outReg <= cacheData[instrPos][63:32];
+          2'b10: outReg <= cacheData[instrPos][95:64];
+          2'b11: outReg <= cacheData[instrPos][127:96];
         endcase
       end else begin
         missReg <= 1'b1;
