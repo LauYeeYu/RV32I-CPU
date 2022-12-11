@@ -36,7 +36,9 @@ assign instrOutValid = instrOutValidReg;
 
 always @(posedge clkIn) begin
   if (resetIn) begin
-    cacheValid <= {CACHE_SIZE{1'b0}};
+    cacheValid       <= {CACHE_SIZE{1'b0}};
+    instrOutValidReg <= 0;
+    missReg          <= 0;
   end else begin
     if (memDataValid) begin
       cacheValid[memPos] <= 1'b1;
@@ -45,7 +47,8 @@ always @(posedge clkIn) begin
     end
     if (instrInValid) begin
       if (hit) begin
-        instrOutValidReg <= 1'b1;
+        missReg          <= 0;
+        instrOutValidReg <= 1;
         case (instrAddrIn[BLOCK_WIDTH-1:2])
           2'b00: outReg <= cacheData[instrPos][31:0];
           2'b01: outReg <= cacheData[instrPos][63:32];
@@ -53,7 +56,8 @@ always @(posedge clkIn) begin
           2'b11: outReg <= cacheData[instrPos][127:96];
         endcase
       end else begin
-        missReg <= 1'b1;
+        missReg          <= 1;
+        instrOutValidReg <= 0;
       end
     end
   end
