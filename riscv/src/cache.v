@@ -3,7 +3,7 @@ module Cache #(
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
   parameter ICACHE_WIDTH = 8,
-  parameter DCACHE_WIDTH = 8
+  parameter DCACHE_WIDTH = 9
 ) (
   input  wire                  clkIn,         // system clock (from CPU)
   input  wire                  resetIn,       // resetIn (from CPU)
@@ -12,7 +12,7 @@ module Cache #(
   input  wire                  instrInValid,  // instruction valid signal (Instruction Unit)
   input  wire [ADDR_WIDTH-1:0] instrAddrIn,   // instruction address (Instruction Unit)
   input  wire [1:0]            accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  input  wire                  readWirteIn,   // read/write select (read: 1, write: 0)
+  input  wire                  readWriteIn,   // read/write select (read: 1, write: 0)
   input  wire [ADDR_WIDTH-1:0] dataAddrIn,    // data address (from Load Store Buffer)
   input  wire [31:0]           dataIn,        // data to write (from Load Store Buffer)
   output wire                  readWriteOut,  // read/write select (read: 1, write: 0)
@@ -63,8 +63,10 @@ module Cache #(
     .ADDR_WIDTH  (ADDR_WIDTH),
     .BLOCK_WIDTH (BLOCK_WIDTH),
     .BLOCK_SIZE  (BLOCK_SIZE),
-    .CACHE_WIDTH (ICACHE_WIDTH)
+    .CACHE_WIDTH (ICACHE_WIDTH),
+    .CACHE_SIZE  (2**ICACHE_WIDTH)
   ) icache(
+    .clkIn         (clkIn),
     .resetIn       (resetIn),
     .instrInValid  (instrInValid),
     .instrAddrIn   (instrAddrIn),
@@ -80,8 +82,10 @@ module Cache #(
     .ADDR_WIDTH  (ADDR_WIDTH),
     .BLOCK_WIDTH (BLOCK_WIDTH),
     .BLOCK_SIZE  (BLOCK_SIZE),
-    .CACHE_WIDTH (DCACHE_WIDTH)
+    .CACHE_WIDTH (DCACHE_WIDTH),
+    .CACHE_SIZE  (2**DCACHE_WIDTH)
   ) dcache(
+    .clkIn         (clkIn),
     .resetIn      (resetIn),
     .accessType   (accessType),
     .readWriteIn  (readWriteIn),
@@ -128,12 +132,12 @@ module Cache #(
     if (loading) begin
       case (progress)
         // For reading the memory, the progress indicates that the data read
-        // from the memory is at the progress; While for writing the memory,
+        // from the memory is at the progress; while for writing the memory,
         // the progress indicates that the data to be written is at the progress.
         4'b1111: begin
-          loading <= 0;
-          idle <= 1;
-          progress <= 0;
+          loading     <= 0;
+          idle        <= 1;
+          progress    <= 0;
           resultReady <= 1;
           if (readWrite) begin // read
             buffer[BLOCK_SIZE*8-1:BLOCK_SIZE*8-8] <= memIn;
