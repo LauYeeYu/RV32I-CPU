@@ -113,8 +113,6 @@ module Cache #(
 
   // ICache and DCache control logic
   always @(posedge clkIn) begin
-    acceptWriteReg <= ~dcacheReadWriteOut;
-
     // If the memory has already been loaded
     if (resultReady) begin
       if (readWrite) begin // read
@@ -136,6 +134,7 @@ module Cache #(
 
     // load the memory
     if (loading) begin
+      acceptWriteReg <= 0;
       case (progress)
         // For reading the memory, the progress indicates that the data read
         // from the memory is at the progress; while for writing the memory,
@@ -305,12 +304,14 @@ module Cache #(
         end
       endcase
     end else if (idle) begin
-      idle <= 0;
+      idle           <= 0;
+      acceptWriteReg <= 0;
     end else if (dcacheMiss) begin // dcache have the priority to use memory
       readWrite      <= dcacheReadWriteOut;
       fromICache     <= 0;
       loading        <= 1;
       progress       <= 0;
+      acceptWriteReg <= ~dcacheReadWriteOut;
       if (dcacheReadWriteOut) begin // read
         tag        <= dcacheMissAddr;
         memAddrReg <= {tag, 4'b0000};
@@ -318,12 +319,15 @@ module Cache #(
         buffer <= dcacheMemDataOut;
       end
     end else if (icacheMiss) begin
-      readWrite  <= 1; // read
-      fromICache <= 1;
-      loading    <= 1;
-      progress   <= 0;
-      tag        <= instrAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
-      memAddrReg <= {instrAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH], 4'b0000};
+      acceptWriteReg <= 0;
+      readWrite      <= 1; // read
+      fromICache     <= 1;
+      loading        <= 1;
+      progress       <= 0;
+      tag            <= instrAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+      memAddrReg     <= {instrAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH], 4'b0000};
+    end else begin
+      acceptWriteReg <= 0;
     end
   end
 endmodule
