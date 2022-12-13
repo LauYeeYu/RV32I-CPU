@@ -1,41 +1,40 @@
 module DCache #(
-  parameter ADDR_WIDTH = 17,
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
   parameter CACHE_WIDTH = 9,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
-  input  wire                            clkIn,        // system clock (from CPU)
-  input  wire                            resetIn,      // resetIn
-  input  wire [1:0]                      accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  input  wire                            readWriteIn,  // read/write select (read: 1, write: 0)
-  input  wire [ADDR_WIDTH-1:0]           dataAddrIn,   // data address (Load/Store Buffer)
-  input  wire [31:0]                     dataIn,       // data to write
-  input  wire                            memDataValid, // data valid signal (Instruction Unit)
-  input  wire [ADDR_WIDTH-1:BLOCK_WIDTH] memAddr,      // memory address
-  input  wire [BLOCK_SIZE*8-1:0]         memDataIn,    // data to loaded from RAM
-  input  wire                            acceptWrite,  // write accept signal (Cache)
-  output wire                            miss,         // miss signal (for input and output)
-  output wire [ADDR_WIDTH-1:BLOCK_WIDTH] missAddr,     // miss address (for input and output)
-  output wire                            readWriteOut, // read/write select for mem (read: 1, write: 0)
-  output wire [ADDR_WIDTH-1:BLOCK_WIDTH] memAddrOut,   // data address
-  output wire [BLOCK_SIZE*8-1:0]         memOut,       // data to write
-  output wire                            dataOutValid, // instruction output valid signal (Load/Store Buffer)
-  output wire [31:0]                     dataOut,      // instruction (Load/Store Buffer)
-  output wire                            dataWriteSuc  // data write success signal (Load Store Buffer)
+  input  wire                    clkIn,        // system clock (from CPU)
+  input  wire                    resetIn,      // resetIn
+  input  wire [1:0]              accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
+  input  wire                    readWriteIn,  // read/write select (read: 1, write: 0)
+  input  wire [31:0]             dataAddrIn,   // data address (Load/Store Buffer)
+  input  wire [31:0]             dataIn,       // data to write
+  input  wire                    memDataValid, // data valid signal (Instruction Unit)
+  input  wire [31:BLOCK_WIDTH]   memAddr,      // memory address
+  input  wire [BLOCK_SIZE*8-1:0] memDataIn,    // data to loaded from RAM
+  input  wire                    acceptWrite,  // write accept signal (Cache)
+  output wire                    miss,         // miss signal (for input and output)
+  output wire [31:BLOCK_WIDTH]   missAddr,     // miss address (for input and output)
+  output wire                    readWriteOut, // read/write select for mem (read: 1, write: 0)
+  output wire [31:BLOCK_WIDTH]   memAddrOut,   // data address
+  output wire [BLOCK_SIZE*8-1:0] memOut,       // data to write
+  output wire                    dataOutValid, // instruction output valid signal (Load/Store Buffer)
+  output wire [31:0]             dataOut,      // instruction (Load/Store Buffer)
+  output wire                    dataWriteSuc  // data write success signal (Load Store Buffer)
 );
 
 // cache block
 reg [CACHE_SIZE-1:0] cacheValid;
 reg [CACHE_SIZE-1:0] cacheDirty;
-reg [CACHE_SIZE-1:0] cacheTag  [ADDR_WIDTH-1:BLOCK_WIDTH];
+reg [CACHE_SIZE-1:0] cacheTag  [31:BLOCK_WIDTH];
 reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE*8-1:0];
 
 // output registers
 reg [31:0]                     outReg;
 reg                            outValidReg;
 reg                            missReg;
-reg [ADDR_WIDTH-1:BLOCK_WIDTH] missAddrReg;
+reg [31:BLOCK_WIDTH] missAddrReg;
 reg                            outRegWriteSuc;
 reg                            readWriteOutReg;
 
@@ -49,8 +48,8 @@ assign readWriteOut = readWriteOutReg;
 // Untensils
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] dataPos     = dataAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] nextDataPos = dataAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH] + 1;
-wire [ADDR_WIDTH-1:BLOCK_WIDTH]  memPos      = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
-wire hit = cacheValid[dataPos] && (cacheTag[dataPos] == dataAddrIn[ADDR_WIDTH-1:CACHE_WIDTH]);
+wire [31:BLOCK_WIDTH]            memPos      = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
+wire hit = cacheValid[dataPos] && (cacheTag[dataPos] == dataAddrIn[31:CACHE_WIDTH]);
 wire nextHit = cacheValid[nextDataPos] &&
   (cacheTag[nextDataPos] == ((dataAddrIn + BLOCK_SIZE) >> CACHE_WIDTH));
 wire blockPos = dataAddrIn[BLOCK_WIDTH-1:0];
@@ -66,7 +65,7 @@ always @(posedge clkIn) begin
   end else begin
     if (memDataValid) begin
       cacheValid[memPos] <= 1;
-      cacheTag  [memPos] <= memAddr[ADDR_WIDTH-1:CACHE_WIDTH];
+      cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH];
       cacheData [memPos] <= memDataIn;
       cacheDirty[memPos] <= 0;
     end
@@ -124,7 +123,7 @@ always @(posedge clkIn) begin
           // Cache miss
           outValidReg         <= 0;
           outRegWriteSuc      <= 0;
-          missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+          missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
           missReg             <= 1;
           readWriteOutReg     <= cacheDirty[dataPos] && ~acceptWrite;
           if (acceptWrite) cacheDirty[dataPos] <= 0;
@@ -162,7 +161,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -198,7 +197,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -210,7 +209,7 @@ always @(posedge clkIn) begin
           // Cache miss
           outValidReg         <= 0;
           outRegWriteSuc      <= 0;
-          missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+          missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
           missReg             <= 1;
           readWriteOutReg     <= cacheDirty[dataPos]& ~acceptWrite;
           if (acceptWrite) cacheDirty[dataPos] <= 0;
@@ -246,7 +245,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -259,7 +258,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -272,7 +271,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -306,7 +305,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -321,7 +320,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -336,7 +335,7 @@ always @(posedge clkIn) begin
                   // Cache miss
                   outValidReg         <= 0;
                   outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+                  missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
                   missReg             <= 1;
                   readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
                   if (acceptWrite) cacheDirty[dataPos+1] <= 0;
@@ -348,7 +347,7 @@ always @(posedge clkIn) begin
           // Cache miss
           outValidReg         <= 0;
           outRegWriteSuc      <= 0;
-          missAddrReg         <= dataAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
+          missAddrReg         <= dataAddrIn[31:BLOCK_WIDTH];
           missReg             <= 1;
           readWriteOutReg     <= cacheDirty[dataPos] & ~acceptWrite;
           if (acceptWrite) cacheDirty[dataPos] <= 0;

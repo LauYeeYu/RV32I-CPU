@@ -1,38 +1,37 @@
 module Cache #(
-  parameter ADDR_WIDTH = 17,
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
   parameter ICACHE_WIDTH = 8,
   parameter DCACHE_WIDTH = 9
 ) (
-  input  wire                  clkIn,         // system clock (from CPU)
-  input  wire                  resetIn,       // resetIn (from CPU)
-  input  wire                  readyIn,       // ready signal (from CPU)
-  input  wire [7:0]            memIn,         // data from RAM
-  input  wire                  instrInValid,  // instruction valid signal (Instruction Unit)
-  input  wire [ADDR_WIDTH-1:0] instrAddrIn,   // instruction address (Instruction Unit)
-  input  wire [1:0]            accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  input  wire                  readWriteIn,   // read/write select (read: 1, write: 0)
-  input  wire [ADDR_WIDTH-1:0] dataAddrIn,    // data address (from Load Store Buffer)
-  input  wire [31:0]           dataIn,        // data to write (from Load Store Buffer)
-  output wire                  readWriteOut,  // read/write select (read: 1, write: 0)
-  output wire [ADDR_WIDTH-1:0] memAddr,       // memory address
-  output wire [7:0]            memOut,        // write data to RAM
-  output wire                  instrOutValid, // instruction output valid signal (Instruction Unit)
-  output wire [31:0]           instrOut,      // instruction (Instruction Unit)
-  output wire                  dataOutValid,  // data output valid signal (Load Store Buffer)
-  output wire [31:0]           dataOut,       // data (Load Store Buffer)
-  output wire                  dataWriteSuc   // data write success signal (Load Store Buffer)
+  input  wire        clkIn,         // system clock (from CPU)
+  input  wire        resetIn,       // resetIn (from CPU)
+  input  wire        readyIn,       // ready signal (from CPU)
+  input  wire [7:0]  memIn,         // data from RAM
+  input  wire        instrInValid,  // instruction valid signal (Instruction Unit)
+  input  wire [31:0] instrAddrIn,   // instruction address (Instruction Unit)
+  input  wire [1:0]  accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
+  input  wire        readWriteIn,   // read/write select (read: 1, write: 0)
+  input  wire [31:0] dataAddrIn,    // data address (from Load Store Buffer)
+  input  wire [31:0] dataIn,        // data to write (from Load Store Buffer)
+  output wire        readWriteOut,  // read/write select (read: 1, write: 0)
+  output wire [31:0] memAddr,       // memory address
+  output wire [7:0]  memOut,        // write data to RAM
+  output wire        instrOutValid, // instruction output valid signal (Instruction Unit)
+  output wire [31:0] instrOut,      // instruction (Instruction Unit)
+  output wire        dataOutValid,  // data output valid signal (Load Store Buffer)
+  output wire [31:0] dataOut,       // data (Load Store Buffer)
+  output wire        dataWriteSuc   // data write success signal (Load Store Buffer)
 );
 
   // Mem regs
   reg                  memReadWrite = 1'b1;
   reg [7:0]            memOutReg;
-  reg [ADDR_WIDTH-1:0] memAddrReg;
+  reg [31:0] memAddrReg;
 
   // ICache input wires
   reg                             icacheMemInValid;
-  wire [ADDR_WIDTH-1:BLOCK_WIDTH] icacheMemAddr = tag;
+  wire [31:BLOCK_WIDTH] icacheMemAddr = tag;
   wire [BLOCK_SIZE*8-1:0]         icacheMemData = buffer;
 
   // ICache output wires
@@ -40,14 +39,14 @@ module Cache #(
 
   // DCache input wires
   reg                             dcacheMemInValid;
-  wire [ADDR_WIDTH-1:BLOCK_WIDTH] dcacheMemAddrIn = tag;
+  wire [31:BLOCK_WIDTH] dcacheMemAddrIn = tag;
   wire [BLOCK_SIZE*8-1:0]         dcacheMemDataIn = buffer;
 
   // DCache output wires
   wire                            dcacheMiss;
-  wire [ADDR_WIDTH-1:BLOCK_WIDTH] dcacheMissAddr;
+  wire [31:BLOCK_WIDTH] dcacheMissAddr;
   wire                            dcacheReadWriteOut;
-  wire [ADDR_WIDTH-1:BLOCK_WIDTH] dcacheMemAddrOut;
+  wire [31:BLOCK_WIDTH] dcacheMemAddrOut;
   wire [BLOCK_SIZE*8-1:0]         dcacheMemDataOut;
 
   // Buffer
@@ -55,14 +54,13 @@ module Cache #(
   reg                            resultReady = 1'b0;
   reg                            readWrite; // 1: read, 0: write
   reg                            idle = 1'b0;
-  reg [ADDR_WIDTH-1:BLOCK_WIDTH] tag = 0;
+  reg [31:BLOCK_WIDTH] tag = 0;
   reg [BLOCK_SIZE*8-1:0]         buffer = 0;
   reg [BLOCK_WIDTH-1:0]          progress = 0;
   reg                            fromICache = 0; // DCache: 0, ICache: 1
   reg                            acceptWriteReg;
 
   ICache #(
-    .ADDR_WIDTH  (ADDR_WIDTH),
     .BLOCK_WIDTH (BLOCK_WIDTH),
     .BLOCK_SIZE  (BLOCK_SIZE),
     .CACHE_WIDTH (ICACHE_WIDTH),
@@ -81,7 +79,6 @@ module Cache #(
   );
 
   DCache #(
-    .ADDR_WIDTH  (ADDR_WIDTH),
     .BLOCK_WIDTH (BLOCK_WIDTH),
     .BLOCK_SIZE  (BLOCK_SIZE),
     .CACHE_WIDTH (DCACHE_WIDTH),
@@ -324,8 +321,8 @@ module Cache #(
       fromICache     <= 1;
       loading        <= 1;
       progress       <= 0;
-      tag            <= instrAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH];
-      memAddrReg     <= {instrAddrIn[ADDR_WIDTH-1:BLOCK_WIDTH], 4'b0000};
+      tag            <= instrAddrIn[31:BLOCK_WIDTH];
+      memAddrReg     <= {instrAddrIn[31:BLOCK_WIDTH], 4'b0000};
     end else begin
       acceptWriteReg <= 0;
     end
