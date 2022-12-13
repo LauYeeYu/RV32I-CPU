@@ -9,10 +9,9 @@ subgraph Cache
   ICache[Instruction Cache]
   DCache[Data Cache]
 end
-InstructionUnit[Instruction Unit]
+InstructionUnit[Instruction Unit & PC]
 LSBuf[Load & Store Buffer]
 Predictor[Predictor]
-PC(PC)
 DRegs(Data Registers)
 RoB[Reorder Buffer]
 RegFile[Register File]
@@ -24,12 +23,10 @@ Mem --> DCache
 Mem --> ICache
 DCache --> LSBuf
 LSBuf --> DCache
-PC --> InstructionUnit
 ICache --> InstructionUnit
 Predictor --> InstructionUnit
 InstructionUnit --> Predictor
 InstructionUnit --> RS
-InstructionUnit --> PC
 RS --> ALU
 ALU --> RS
 RS --> RegFile
@@ -40,7 +37,6 @@ RoB --> DRegs
 DRegs --> RoB
 LSBuf --> RoB
 RoB --> LSBuf
-RoB --> PC
 LSBuf --> RegFile
 RegFile --> LSBuf
 RoB --> Predictor
@@ -60,7 +56,7 @@ See the [document for Cache](cache.md) for more details.
 ### Instruction Unit
 
 The instruction unit fetches and decodes the instruction at the address
-stored in PC.
+stored in PC. PC is also a part of the instruction unit.
 
 See the [document for Instruction Unit](instruction_unit.md) for more details.
 
