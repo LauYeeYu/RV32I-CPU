@@ -103,7 +103,8 @@ module ICache #(
   input  wire [BLOCK_SIZE*8-1:0]         memDataIn,     // data to loaded from RAM
   output wire                            miss,          // miss signal
   output wire                            instrOutValid, // instruction output valid signal (Instruction Unit)
-  output wire [31:0]                     instrOut       // instruction (Instruction Unit)
+  output wire [31:0]                     instrOut,      // instruction (Instruction Unit)
+  output wire [ADDR_WIDTH-1:0]           instrAddrOut   // instruction address (Instruction Unit)
 );
 endmodule
 ```

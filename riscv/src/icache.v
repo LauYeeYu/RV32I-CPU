@@ -14,7 +14,8 @@ module ICache #(
   input  wire [BLOCK_SIZE*8-1:0]         memDataIn,     // data to loaded from RAM
   output wire                            miss,          // miss signal
   output wire                            instrOutValid, // instruction output valid signal (Instruction Unit)
-  output wire [31:0]                     instrOut       // instruction (Instruction Unit)
+  output wire [31:0]                     instrOut,      // instruction (Instruction Unit)
+  output wire [ADDR_WIDTH-1:0]           instrAddrOut   // instruction address (Instruction Unit)
 );
 
 reg [CACHE_SIZE-1:0] cacheValid;
@@ -30,6 +31,7 @@ wire hit = instrInValid && cacheValid[instrPos] && (cacheTag[instrPos] == instrA
 assign miss          = ~hit;
 assign instrOutValid = hit;
 assign instrOut      = cacheData[instrPos][blockPos];
+assign instrAddrOut  = instrAddrIn;
 
 always @(posedge clkIn) begin
   if (resetIn) begin
