@@ -19,46 +19,29 @@ module ICache #(
 
 reg [CACHE_SIZE-1:0] cacheValid;
 reg [CACHE_SIZE-1:0] cacheTag  [ADDR_WIDTH-1:BLOCK_WIDTH+CACHE_WIDTH];
-reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE*8-1:0];
-
-reg [31:0] outReg;
-reg        missReg;
-reg        instrOutValidReg;
+reg [CACHE_SIZE-1:0] cacheData [3:0][31:0];
 
 // Utensils
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] instrPos = instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
-wire [CACHE_WIDTH-1:BLOCK_WIDTH] memPos = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
-wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[ADDR_WIDTH-1:CACHE_WIDTH]);
+wire [CACHE_WIDTH-1:BLOCK_WIDTH] memPos   = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
+wire [BLOCK_WIDTH-3:0]           blockPos = instrAddrIn[BLOCK_WIDTH-1:2];
+wire hit = instrInValid && cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[ADDR_WIDTH-1:CACHE_WIDTH]);
 
-assign instrOut      = outReg;
-assign miss          = missReg;
-assign instrOutValid = instrOutValidReg;
+assign miss          = ~hit;
+assign instrOutValid = hit;
+assign instrOut      = cacheData[instrPos][blockPos];
 
 always @(posedge clkIn) begin
   if (resetIn) begin
     cacheValid       <= {CACHE_SIZE{1'b0}};
-    instrOutValidReg <= 0;
-    missReg          <= 0;
   end else begin
     if (memDataValid) begin
-      cacheValid[memPos] <= 1'b1;
-      cacheTag  [memPos] <= memAddr[ADDR_WIDTH-1:CACHE_WIDTH];
-      cacheData [memPos] <= memDataIn;
-    end
-    if (instrInValid) begin
-      if (hit) begin
-        missReg          <= 0;
-        instrOutValidReg <= 1;
-        case (instrAddrIn[BLOCK_WIDTH-1:2])
-          2'b00: outReg <= cacheData[instrPos][31:0];
-          2'b01: outReg <= cacheData[instrPos][63:32];
-          2'b10: outReg <= cacheData[instrPos][95:64];
-          2'b11: outReg <= cacheData[instrPos][127:96];
-        endcase
-      end else begin
-        missReg          <= 1;
-        instrOutValidReg <= 0;
-      end
+      cacheValid[memPos]    <= 1'b1;
+      cacheTag  [memPos]    <= memAddr[ADDR_WIDTH-1:CACHE_WIDTH];
+      cacheData [memPos][0] <= memDataIn[31:0];
+      cacheData [memPos][1] <= memDataIn[63:32];
+      cacheData [memPos][2] <= memDataIn[95:64];
+      cacheData [memPos][3] <= memDataIn[127:96];
     end
   end
 end
