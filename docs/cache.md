@@ -68,8 +68,6 @@ When the `dataValid` signal is high, the Cache module will find the data in
 the [Data Cache module](#data-cache) and send it through the `dataOut` signal
 (the `dataOutValid` is high then).
 
-TODO: add behaviour about icache and dcache
-
 ## Instruction Cache
 
 The Instruction Cache module is located at `src/icache.v`.
