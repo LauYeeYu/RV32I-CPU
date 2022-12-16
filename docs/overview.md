@@ -12,9 +12,8 @@ end
 InstructionUnit[Instruction Unit & PC]
 LSBuf[Load & Store Buffer]
 Predictor[Predictor]
-DRegs(Data Registers)
 RoB[Reorder Buffer]
-RegFile[Register File]
+RegFile[Register File & Registers]
 RS[Reservation Station]
 ALU[ALU]
 
@@ -33,8 +32,6 @@ RS --> RegFile
 RegFile --> RS
 RS --> RoB
 RoB --> RS
-RoB --> DRegs
-DRegs --> RoB
 LSBuf --> RoB
 RoB --> LSBuf
 LSBuf --> RegFile
