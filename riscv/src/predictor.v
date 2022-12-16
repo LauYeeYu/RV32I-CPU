@@ -18,12 +18,15 @@ reg [LOCAL_WIDTH-1:0] localHistory[1:0];
 wire instrPos = instrAddr[LOCAL_WIDTH+1:2];
 wire updatePos = updateInstr[LOCAL_WIDTH+1:2];
 
-assign jump = localHistory[instrPos] > 2'b01 ? 1'b1 : 1'b0;
+reg jumpReg;
+
+assign jump = jumpReg;
 
 always @(posedge clockIn) begin
   if (resetIn) begin
     localHistory <= {LOCAL_SIZE{2'b01}};
   end else begin
+    jumpReg = localHistory[instrPos] > 2'b01 ? 1'b1 : 1'b0;
     if (updateValid) begin
       localHistory[updatePos] <= taken ? localHistory[updatePos] + 2'b01 : localHistory[updatePos] - 2'b01;
     end
