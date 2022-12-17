@@ -19,9 +19,13 @@ wire [LOCAL_WIDTH-1:0] updatePos = updateInstr[LOCAL_WIDTH+1:2];
 
 assign jump = localHistory[instrPos] > 2'b01 ? 1'b1 : 1'b0;
 
+integer i;
+
 always @(posedge clockIn) begin
   if (resetIn) begin
-    localHistory <= {LOCAL_SIZE{2'b01}};
+    for (i = 0; i < LOCAL_SIZE; i = i + 1) begin
+      localHistory[i] <= 2'b01;
+    end
   end else begin
     instrPos <= instrAddr[LOCAL_WIDTH+1:2];
     if (updateValid) begin
