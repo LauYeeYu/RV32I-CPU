@@ -14,8 +14,7 @@ LSBuf[Load & Store Buffer]
 Predictor[Predictor]
 RoB[Reorder Buffer]
 RegFile[Register File & Registers]
-RS[Reservation Station]
-ALU[ALU]
+RS[Reservation Station & ALU]
 
 DCache --> Mem
 Mem --> DCache
@@ -26,8 +25,6 @@ ICache --> InstructionUnit
 Predictor --> InstructionUnit
 InstructionUnit --> Predictor
 InstructionUnit --> RS
-RS --> ALU
-ALU --> RS
 RS --> RegFile
 RegFile --> RS
 RS --> RoB
