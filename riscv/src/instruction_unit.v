@@ -1,61 +1,68 @@
-module InstructionUnit(
-  input  wire        resetIn,       // resetIn
-  input  wire        clockIn,       // clockIn
-  input  wire        instrInValid,  // instruction valid signal (icache)
-  input  wire [31:0] instrIn,       // data valid signal (icache)
-  input  wire [31:0] instrAddr,     // instruction address (icache)
+module InstructionUnit#(
+  parameter ROB_WIDTH = 4
+) (
+  input  wire                 resetIn,       // resetIn
+  input  wire                 clockIn,       // clockIn
+  input  wire                 instrInValid,  // instruction valid signal (icache)
+  input  wire [31:0]          instrIn,       // data valid signal (icache)
+  input  wire [31:0]          instrAddr,     // instruction address (icache)
+
   // Reservation Station part
-  input  wire        rsFull,        // reservation station full signal
-  input  wire        rsUpdate,      // reservation station update signal
-  input  wire [3:0]  rsRobIndex,    // reservation station rob index
-  input  wire [31:0] rsUpdateVal,   // reservation station value
+  input  wire                 rsFull,        // reservation station full signal
+  input  wire                 rsUpdate,      // reservation station update signal
+  input  wire [ROB_WIDTH-1:0] rsRobIndex,    // reservation station rob index
+  input  wire [31:0]          rsUpdateVal,   // reservation station value
+
   // Reorder Buffer part
-  input  wire        robFull,       // reorder buffer full signal
-  input  wire [3:0]  robNext,       // reorder buffer next index
-  input  wire        robReady,      // reorder buffer ready signal
-  input  wire [31:0] robValue,      // reorder buffer value
-  output wire [3:0]  robRequest,    // reorder buffer request
-  output wire        robAddValid,   // reorder buffer add valid signal
-  output wire [1:0]  robAddType,    // reorder buffer add type signal
-  output wire        robAddReady,   // reorder buffer add ready signal
-  output wire [3:0]  robAddValue,   // reorder buffer add value signal
-  output wire        robAddDest,    // reorder buffer add destination signal
-  output wire [31:0] robAddAddr,    // reorder buffer add address
+  input  wire                 robFull,       // reorder buffer full signal
+  input  wire [ROB_WIDTH-1:0] robNext,       // reorder buffer next index
+  input  wire                 robReady,      // reorder buffer ready signal
+  input  wire [31:0]          robValue,      // reorder buffer value
+  output wire [ROB_WIDTH-1:0] robRequest,    // reorder buffer request
+  output wire                 robAddValid,   // reorder buffer add valid signal
+  output wire [1:0]           robAddType,    // reorder buffer add type signal
+  output wire                 robAddReady,   // reorder buffer add ready signal
+  output wire [31:0]          robAddValue,   // reorder buffer add value signal
+  output wire                 robAddDest,    // reorder buffer add destination register signal
+  output wire [31:0]          robAddAddr,    // reorder buffer add address
+
   // Load/Store Buffer part
-  input  wire        lsbFull,       // load/store buffer full signal
-  input  wire        lsbUpdate,     // load/store buffer update signal
-  input  wire [3:0]  lsbRobIndex,   // load/store buffer rob index
-  input  wire [31:0] lsbUpdateVal,  // load/store buffer value
+  input  wire                 lsbFull,       // load/store buffer full signal
+  input  wire                 lsbUpdate,     // load/store buffer update signal
+  input  wire [ROB_WIDTH-1:0] lsbRobIndex,   // load/store buffer rob index
+  input  wire [31:0]          lsbUpdateVal,  // load/store buffer value
+
   // Register File part
-  input  wire        rs1Dirty,      // rs1 dirty signal
-  input  wire [3:0]  rs1Dependency, // rs1 dependency
-  input  wire [31:0] rs1Value,      // rs1 value
-  input  wire        rs2Dirty,      // rs2 dirty signal
-  input  wire [3:0]  rs2Dependency, // rs2 dependency
-  input  wire [31:0] rs2Value,      // rs2 value
-  output wire        rfUpdateValid, // register file update valid signal
-  output wire [4:0]  rfUpdateDest,  // register file update destination
-  output wire [3:0]  rfUpdateIndex, // register file update value
+  input  wire                 rs1Dirty,      // rs1 dirty signal
+  input  wire [ROB_WIDTH-1:0] rs1Dependency, // rs1 dependency
+  input  wire [31:0]          rs1Value,      // rs1 value
+  input  wire                 rs2Dirty,      // rs2 dirty signal
+  input  wire [ROB_WIDTH-1:0] rs2Dependency, // rs2 dependency
+  input  wire [31:0]          rs2Value,      // rs2 value
+  output wire                 rfUpdateValid, // register file update valid signal
+  output wire [4:0]           rfUpdateDest,  // register file update destination
+  output wire [ROB_WIDTH-1:0] rfUpdateIndex, // register file update value
+
   // Predictor part
-  input  wire        jump,          // jump signal
-  output wire        instrOutValid, // instruction output valid signal (PC)
-  output wire [31:0] instrAddrOut   // instruction address (PC)
+  input  wire                 jump,          // jump signal
+  output wire                 instrOutValid, // instruction output valid signal (PC)
+  output wire [31:0]          instrAddrOut   // instruction address (PC)
 );
 
-reg [31:0] PC;
-reg [31:0] instrReg; // for instrction decode and issue
-reg [31:0] instrAddrReg;
-reg        instrRegValid;
-reg        stall;
-reg [3:0]  stallDependency;
-reg        pending; // pending for the next PC information
-reg        robAddValidReg;
-reg [1:0]  robAddTypeReg;
-reg        robAddReadyReg;
-reg [31:0] robValueReg;
-reg [4:0]  destReg;
-reg [31:0] robAddrReg;
-reg        rfUpdateValidReg;
+reg [31:0]          PC;
+reg [31:0]          instrReg; // for instrction decode and issue
+reg [31:0]          instrAddrReg;
+reg                 instrRegValid;
+reg                 stall;
+reg [ROB_WIDTH-1:0] stallDependency;
+reg                 pending; // pending for the next PC information
+reg                 robAddValidReg;
+reg [1:0]           robAddTypeReg;
+reg                 robAddReadyReg;
+reg [31:0]          robValueReg;
+reg [4:0]           destReg;
+reg [31:0]          robAddrReg;
+reg                 rfUpdateValidReg;
 
 assign instrOutValid = ~stall & ~pending;
 assign instrAddrOut  = PC;
