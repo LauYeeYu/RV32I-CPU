@@ -39,7 +39,7 @@ module InstructionUnit(
   // Predictor part
   input  wire        jump,          // jump signal
   output wire        instrOutValid, // instruction output valid signal (PC)
-  output wire [31:0] instrAddrOut,  // instruction address (PC)
+  output wire [31:0] instrAddrOut   // instruction address (PC)
 );
 
 reg [31:0] PC;
@@ -53,8 +53,9 @@ reg        robAddValidReg;
 reg [1:0]  robAddTypeReg;
 reg        robAddReadyReg;
 reg [31:0] robValueReg;
-reg [4:0]  robDestReg;
+reg [4:0]  destReg;
 reg [31:0] robAddrReg;
+reg        rfUpdateValidReg;
 
 assign instrOutValid = ~stall & ~pending;
 assign instrAddrOut  = PC;
@@ -63,10 +64,11 @@ assign robAddValid   = robAddValidReg;
 assign robAddType    = robAddTypeReg;
 assign robAddReady   = robAddReadyReg;
 assign robAddValue   = robValueReg;
-assign robAddDest    = robDestReg;
+assign robAddDest    = destReg;
 assign robAddAddr    = robAddrReg;
 assign rfUpdateIndex = robNext;
-assign rfUpdateDest  = rd;
+assign rfUpdateDest  = destReg;
+assign rfUpdateValid = rfUpdateValidReg;
 
 // Utensils for fetching instruction
 wire lsbUsed = (instrIn[6:0] == 7'b0000011) || (instrIn[6:0] == 7'b0100011);
@@ -148,38 +150,39 @@ always @(posedge clockIn) begin
     if (instrRegValid) begin
       case (op1)
         7'b0110111: begin // LUI
-          robAddValidReg <= regUpdate;
-          robAddTypeReg  <= 2'b00; // Register write
-          robValueReg    <= upperImm;
-          robDestReg     <= rd;
-          robAddReadyReg <= 1'b1;
-          rfUpdateValid  <= regUpdate;
+          robAddValidReg   <= regUpdate;
+          robAddTypeReg    <= 2'b00; // Register write
+          robValueReg      <= upperImm;
+          destReg          <= rd;
+          robAddReadyReg   <= 1'b1;
+          rfUpdateValidReg <= regUpdate;
         end
         7'b0010111: begin // AUIPC
-          robAddValidReg <= regUpdate;
-          robAddTypeReg  <= 2'b00; // Register write
-          robValueReg    <= instrAddrReg + upperImm;
-          robDestReg     <= rd;
-          robAddReadyReg <= 1'b1;
-          rfUpdateValid  <= regUpdate;
+          robAddValidReg   <= regUpdate;
+          robAddTypeReg    <= 2'b00; // Register write
+          robValueReg      <= instrAddrReg + upperImm;
+          destReg          <= rd;
+          robAddReadyReg   <= 1'b1;
+          rfUpdateValidReg <= regUpdate;
         end
         7'b1101111: begin // JAL
-          robAddValidReg <= regUpdate;
-          robAddTypeReg  <= 2'b00; // Register write
-          robValueReg    <= instrAddrReg + 4;
-          robDestReg     <= rd;
-          robAddReadyReg <= 1'b1;
-          rfUpdateValid  <= regUpdate;
-          pending        <= 1'b0;
-          PC             <= PC + jalImm;
+          robAddValidReg   <= regUpdate;
+          robAddTypeReg    <= 2'b00; // Register write
+          robValueReg      <= instrAddrReg + 4;
+          destReg          <= rd;
+          robAddReadyReg   <= 1'b1;
+          rfUpdateValidReg <= regUpdate;
+          pending          <= 1'b0;
+          PC               <= PC + jalImm;
         end
         7'b1100111: begin // JALR
-          robAddValidReg <= regUpdate;
-          robAddTypeReg  <= 2'b00; // Register write
-          robValueReg    <= instrAddrReg + 4;
-          robDestReg     <= rd;
-          robAddReadyReg <= 1'b1;
-          pending        <= 1'b0;
+          robAddValidReg   <= regUpdate;
+          robAddTypeReg    <= 2'b00; // Register write
+          robValueReg      <= instrAddrReg + 4;
+          destReg          <= rd;
+          robAddReadyReg   <= 1'b1;
+          rfUpdateValidReg <= regUpdate;
+          pending          <= 1'b0;
           if (rs1Constraint) begin
             PC <= rs1RealValue + signedExtImm;
           end else begin
@@ -188,13 +191,13 @@ always @(posedge clockIn) begin
           end
         end
         7'b1100011: begin // branch
-          robAddValidReg <= 1'b1;
-          pending        <= 1'b0;
-          PC             <= jump ? PC + branchDiff : PC + 4;
-          robAddTypeReg  <= 2'b01; // Branch
-          robAddReadyReg <= 1'b0;
-          robAddrReg     <= jump ? PC + 4 : PC + branchDiff;
-          rfUpdateValid  <= regUpdate;
+          robAddValidReg   <= 1'b1;
+          pending          <= 1'b0;
+          PC               <= jump ? PC + branchDiff : PC + 4;
+          robAddTypeReg    <= 2'b01; // Branch
+          robAddReadyReg   <= ~rs1Constraint & ~rs2Constraint;
+          robAddrReg       <= jump ? PC + 4 : PC + branchDiff;
+          rfUpdateValidReg <= 1'b0;
         end
       endcase
     end else begin
