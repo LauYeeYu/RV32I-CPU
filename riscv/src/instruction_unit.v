@@ -12,6 +12,15 @@ module InstructionUnit#(
   input  wire                 rsUpdate,      // reservation station update signal
   input  wire [ROB_WIDTH-1:0] rsRobIndex,    // reservation station rob index
   input  wire [31:0]          rsUpdateVal,   // reservation station value
+  output wire                 rsAddValid,    // reservation station add valid signal
+  output wire [3:0]           rsAddOp,       // reservation station add op
+  output wire [ROB_WIDTH-1:0] rsAddRobIndex, // reservation station add rob index
+  output wire [31:0]          rsAddVal1,     // reservation station add value1
+  output wire                 rsAddHasDep1,  // reservation station add value1 dependency
+  output wire [ROB_WIDTH-1:0] rsAddConstrt1, // reservation station add value1 constraint
+  output wire [31:0]          rsAddVal2,     // reservation station add value2
+  output wire                 rsAddHasDep2,  // reservation station add value2 dependency
+  output wire [ROB_WIDTH-1:0] rsAddConstrt2, // reservation station add value2 constraint
 
   // Reorder Buffer part
   input  wire                 robFull,       // reorder buffer full signal
@@ -63,6 +72,15 @@ reg [31:0]          robValueReg;
 reg [4:0]           destReg;
 reg [31:0]          robAddrReg;
 reg                 rfUpdateValidReg;
+reg                 rsAddValidReg;
+reg [3:0]           rsAddOpReg;
+reg [ROB_WIDTH-1:0] rsAddRobIndexReg;
+reg [31:0]          rsAddVal1Reg;
+reg                 rsAddHasDep1Reg;
+reg [ROB_WIDTH-1:0] rsAddConstrt1Reg;
+reg [31:0]          rsAddVal2Reg;
+reg                 rsAddHasDep2Reg;
+reg [ROB_WIDTH-1:0] rsAddConstrt2Reg;
 
 assign instrOutValid = ~stall & ~pending;
 assign instrAddrOut  = PC;
@@ -76,6 +94,15 @@ assign robAddAddr    = robAddrReg;
 assign rfUpdateIndex = robNext;
 assign rfUpdateDest  = destReg;
 assign rfUpdateValid = rfUpdateValidReg;
+assign rsAddValid    = rsAddValidReg;
+assign rsAddOp       = rsAddOpReg;
+assign rsAddRobIndex = rsAddRobIndexReg;
+assign rsAddVal1     = rsAddVal1Reg;
+assign rsAddHasDep1  = rsAddHasDep1Reg;
+assign rsAddConstrt1 = rsAddConstrt1Reg;
+assign rsAddVal2     = rsAddVal2Reg;
+assign rsAddHasDep2  = rsAddHasDep2Reg;
+assign rsAddConstrt2 = rsAddConstrt2Reg;
 
 // Utensils for fetching instruction
 wire lsbUsed = (instrIn[6:0] == 7'b0000011) || (instrIn[6:0] == 7'b0100011);
@@ -118,6 +145,8 @@ always @(posedge clockIn) begin
     stall           <= 1'b0;
     stallDependency <= 4'b0000;
     instrRegValid   <= 1'b0;
+    robAddReadyReg <= 1'b0;
+    rsAddValidReg  <= 1'b0;
   end else begin
     if (stall) begin
       if (robReady) begin
@@ -155,6 +184,7 @@ always @(posedge clockIn) begin
 
     // Decode and issue
     if (instrRegValid) begin
+      rsAddRobIndexReg <= robNext;
       case (op1)
         7'b0110111: begin // LUI
           robAddValidReg   <= regUpdate;
@@ -163,6 +193,7 @@ always @(posedge clockIn) begin
           destReg          <= rd;
           robAddReadyReg   <= 1'b1;
           rfUpdateValidReg <= regUpdate;
+          rsAddValidReg    <= 1'b0;
         end
         7'b0010111: begin // AUIPC
           robAddValidReg   <= regUpdate;
@@ -171,6 +202,7 @@ always @(posedge clockIn) begin
           destReg          <= rd;
           robAddReadyReg   <= 1'b1;
           rfUpdateValidReg <= regUpdate;
+          rsAddValidReg    <= 1'b0;
         end
         7'b1101111: begin // JAL
           robAddValidReg   <= regUpdate;
@@ -181,6 +213,7 @@ always @(posedge clockIn) begin
           rfUpdateValidReg <= regUpdate;
           pending          <= 1'b0;
           PC               <= PC + jalImm;
+          rsAddValidReg    <= 1'b0;
         end
         7'b1100111: begin // JALR
           robAddValidReg   <= regUpdate;
@@ -190,6 +223,7 @@ always @(posedge clockIn) begin
           robAddReadyReg   <= 1'b1;
           rfUpdateValidReg <= regUpdate;
           pending          <= 1'b0;
+          rsAddValidReg    <= 1'b0;
           if (rs1Constraint) begin
             PC <= rs1RealValue + signedExtImm;
           end else begin
@@ -205,10 +239,68 @@ always @(posedge clockIn) begin
           robAddReadyReg   <= ~rs1Constraint & ~rs2Constraint;
           robAddrReg       <= jump ? PC + 4 : PC + branchDiff;
           rfUpdateValidReg <= 1'b0;
+          rsAddValidReg    <= 1'b0;
+          case (op2)
+            3'b000: begin // BEQ
+              rsAddOpReg       <= 4'b1000; // EQ
+              rsAddHasDep1Reg  <= rs1Constraint;
+              rsAddHasDep2Reg  <= rs2Constraint;
+              rsAddVal1Reg     <= rs1RealValue;
+              rsAddVal2Reg     <= rs2RealValue;
+              rsAddConstrt1Reg <= rs1Dependency;
+              rsAddConstrt2Reg <= rs2Dependency;
+            end
+            3'b001: begin // BNE
+              rsAddOpReg       <= 4'b1001; // NE
+              rsAddHasDep1Reg  <= rs1Constraint;
+              rsAddHasDep2Reg  <= rs2Constraint;
+              rsAddVal1Reg     <= rs1RealValue;
+              rsAddVal2Reg     <= rs2RealValue;
+              rsAddConstrt1Reg <= rs1Dependency;
+              rsAddConstrt2Reg <= rs2Dependency;
+            end
+            3'b100: begin // BLT
+              rsAddOpReg       <= 4'b1010; // LT
+              rsAddHasDep1Reg  <= rs1Constraint;
+              rsAddHasDep2Reg  <= rs2Constraint;
+              rsAddVal1Reg     <= rs1RealValue;
+              rsAddVal2Reg     <= rs2RealValue;
+              rsAddConstrt1Reg <= rs1Dependency;
+              rsAddConstrt2Reg <= rs2Dependency;
+            end
+            3'b101: begin // BGE
+              rsAddOpReg <= 4'b1010; // LT (swap the operands)
+              rsAddHasDep1Reg  <= rs2Constraint;
+              rsAddHasDep2Reg  <= rs1Constraint;
+              rsAddVal1Reg     <= rs2RealValue;
+              rsAddVal2Reg     <= rs1RealValue;
+              rsAddConstrt1Reg <= rs2Dependency;
+              rsAddConstrt2Reg <= rs1Dependency;
+            end
+            3'b110: begin // BLTU
+              rsAddOpReg       <= 4'b1011; // LTU
+              rsAddHasDep1Reg  <= rs1Constraint;
+              rsAddHasDep2Reg  <= rs2Constraint;
+              rsAddVal1Reg     <= rs1RealValue;
+              rsAddVal2Reg     <= rs2RealValue;
+              rsAddConstrt1Reg <= rs1Dependency;
+              rsAddConstrt2Reg <= rs2Dependency;
+            end
+            3'b111: begin // BGEU
+              rsAddOpReg <= 4'b1011; // LTU (swap the operands)
+              rsAddHasDep1Reg  <= rs2Constraint;
+              rsAddHasDep2Reg  <= rs1Constraint;
+              rsAddVal1Reg     <= rs2RealValue;
+              rsAddVal2Reg     <= rs1RealValue;
+              rsAddConstrt1Reg <= rs2Dependency;
+              rsAddConstrt2Reg <= rs1Dependency;
+            end
+          endcase
         end
       endcase
     end else begin
       robAddReadyReg <= 1'b0;
+      rsAddValidReg  <= 1'b0;
     end
   end
 end
