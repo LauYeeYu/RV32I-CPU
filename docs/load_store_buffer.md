@@ -3,6 +3,18 @@
 The Load & Store Buffer is a buffer for load and store instructions. It
 handles everything related to load and store instructions.
 
+## Load & Store Buffer Operator
+| num | binary |     operator      |
+|:---:|:------:|:-----------------:|
+|  0  | `000`  |       byte        |
+|  1  | `001`  |     half word     |
+|  2  | `010`  |       word        |
+|  3  | `011`  |   unsigned byte   |
+|  4  | `100`  | unsigned halfword |
+|  5  | `101`  |     reserved      |
+|  6  | `110`  |     reserved      |
+|  7  | `111`  |     reserved      |
+
 ## Load & Store Buffer Module
 
 The Load & Store Buffer module is located at `src/load_store_buffer.v`.
