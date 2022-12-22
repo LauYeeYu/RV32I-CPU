@@ -279,7 +279,7 @@ always @(posedge clockIn) begin
           pending          <= 1'b0;
           PC               <= jump ? PC + branchDiff : PC + 4;
           robAddTypeReg    <= 2'b01; // Branch
-          robAddReadyReg   <= ~rs1Constraint & ~rs2Constraint;
+          robAddReadyReg   <= 1'b0;
           robAddrReg       <= jump ? PC + 4 : PC + branchDiff;
           rfUpdateValidReg <= 1'b0;
           rsAddValidReg    <= 1'b0;
