@@ -33,14 +33,18 @@ Predict --> step2
 
 The Instruction Unit Module is located at `src/instruction_unit.v`.
 
-THe Instruction Unit Module takes three clock cycles to fetch an
+The Instruction Unit Module takes two clock cycles to fetch an
 instruction - fetching & predicting, issuing.
+
+For some complicated jump instructions (JAL, JALR, and conditional branch
+instructions), the PC is modified in the issuing stage.
 
 The interfaces are listed below:
 
 ```verilog
 module InstructionUnit#(
   parameter ROB_WIDTH = 4,
+  parameter LSB_WIDTH = 4,
   parameter RS_OP_WITDTH = 4,
   parameter ROB_OP_WIDTH = 2,
   parameter LSB_OP_WIDTH = 3
@@ -84,6 +88,7 @@ module InstructionUnit#(
   input  wire                    lsbUpdate,       // load & store buffer update signal
   input  wire [ROB_WIDTH-1:0]    lsbRobIndex,     // load & store buffer rob index
   input  wire [31:0]             lsbUpdateVal,    // load & store buffer value
+  input  wire [LSB_WIDTH-1:0]    lsbNext,         // load & store buffer next index
   output wire                    lsbAddValid,     // load & store buffer add valid signal
   output wire                    lsbAddReadWrite, // load & store buffer read/write select
   output wire [ROB_WIDTH-1:0]    lsbAddRobId,     // load & store buffer rob index
@@ -91,6 +96,7 @@ module InstructionUnit#(
   output wire [31:0]             lsbAddBase,      // load & store buffer add base addr
   output wire [ROB_WIDTH-1:0]    lsbAddConstrtId, // load & store buffer add constraint index (RoB)
   output wire [31:0]             lsbAddOffset,    // load & store buffer add offset
+  output wire [4:0]              lsbAddTarget,    // load & store buffer add target register
   output wire [LSB_OP_WIDTH-1:0] lsbAddOp,        // load & store buffer add op
 
   // Register File part
@@ -113,6 +119,7 @@ endmodule
 ```
 
 ### Requirements for other connected Modules
+*Any unmentioned behaviour is implementation-defined.*
 
 #### Update [Register File](register_file.md)
 The circuit that handles the updating work of the register file should use
