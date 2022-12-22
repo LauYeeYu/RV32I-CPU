@@ -157,6 +157,7 @@ wire [11:0] imm           = instrReg[31:20];
 wire [31:0] upperImm      = {instrReg[31:12], 12'b0};
 wire [31:0] jalImm        = {{12{instrReg[31]}}, instrReg[19:12], instrReg[20], instrReg[30:21], 1'b0};
 wire [31:0] signedExtImm  = {{20{instrReg[31]}}, instrReg[31:20]};
+wire [31:0] unsignedImm   = {20'b0, instrReg[31:20]};
 wire [31:0] branchDiff    = {{20{instrReg[31]}}, instrReg[7], instrReg[30:25], instrReg[11:8], 1'b0};
 wire [31:0] storeDiff     = {{20{instrReg[31]}}, instrReg[31:25], instrReg[11:7]};
 wire [31:0] shiftAmount   = {27'b0, instrReg[24:20]};
@@ -382,6 +383,56 @@ always @(posedge clockIn) begin
             3'b000: lsbAddOpReg <= 3'b000; // Byte
             3'b001: lsbAddOpReg <= 3'b001; // Halfword
             3'b010: lsbAddOpReg <= 3'b010; // Word
+          endcase
+        end
+        7'b0010011: begin // immediate
+          robAddValidReg   <= 1'b1;
+          robAddTypeReg    <= 2'b00; // Register write
+          robAddReadyReg   <= 1'b0;
+          destReg          <= rd;
+          rfUpdateValidReg <= regUpdate;
+          rsAddValidReg    <= 1'b1;
+          lsbAddValidReg   <= 1'b0;
+          rsAddHasDep1Reg  <= rs1Constraint;
+          rsAddHasDep2Reg  <= 1'b0;
+          rsAddVal1Reg     <= rs1RealValue;
+          rsAddConstrt1Reg <= rs1Dependency;
+          case (op2)
+            3'b000: begin // ADDI
+              rsAddOpReg       <= 4'b0000; // ADD
+              rsAddVal2Reg     <= signedExtImm;
+            end
+            3'b010: begin // SLTI
+              rsAddOpReg       <= 4'b1010; // SLT
+              rsAddVal2Reg     <= signedExtImm;
+            end
+            3'b011: begin // SLTIU
+              rsAddOpReg       <= 4'b1011; // SLTU
+              rsAddVal2Reg     <= unsignedImm;
+            end
+            3'b100: begin // XORI
+              rsAddOpReg       <= 4'b0010; // XOR
+              rsAddVal2Reg     <= signedExtImm;
+            end
+            3'b110: begin // ORI
+              rsAddOpReg       <= 4'b0011; // OR
+              rsAddVal2Reg     <= signedExtImm;
+            end
+            3'b111: begin // ANDI
+              rsAddOpReg       <= 4'b0100; // AND
+              rsAddVal2Reg     <= signedExtImm;
+            end
+            3'b001: begin // SLLI
+              rsAddOpReg       <= 4'b0101; // SLL
+              rsAddVal2Reg     <= shiftAmount;
+            end
+            3'b101: begin // SRLI/SRAI
+              rsAddVal2Reg <= shiftAmount;
+              case (op3)
+                3'b101: rsAddOpReg <= 4'b0110; // SRL
+                3'b101: rsAddOpReg <= 4'b0111; // SRA
+              endcase
+            end
           endcase
         end
       endcase
