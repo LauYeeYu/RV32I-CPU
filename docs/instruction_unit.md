@@ -40,38 +40,58 @@ The interfaces are listed below:
 
 ```verilog
 module InstructionUnit#(
-  parameter ROB_WIDTH = 4
+  parameter ROB_WIDTH = 4,
+  parameter RS_OP_WITDTH = 4,
+  parameter ROB_OP_WIDTH = 2,
+  parameter LSB_OP_WIDTH = 3
 ) (
-  input  wire                 resetIn,       // resetIn
-  input  wire                 clockIn,       // clockIn
-  input  wire                 instrInValid,  // instruction valid signal (icache)
-  input  wire [31:0]          instrIn,       // data valid signal (icache)
-  input  wire [31:0]          instrAddr,     // instruction address (icache)
+  input  wire        resetIn,      // resetIn
+  input  wire        clockIn,      // clockIn
+  input  wire        instrInValid, // instruction valid signal (icache)
+  input  wire [31:0] instrIn,      // data valid signal (icache)
+  input  wire [31:0] instrAddr,    // instruction address (icache)
 
   // Reservation Station part
-  input  wire                 rsFull,        // reservation station full signal
-  input  wire                 rsUpdate,      // reservation station update signal
-  input  wire [ROB_WIDTH-1:0] rsRobIndex,    // reservation station rob index
-  input  wire [31:0]          rsUpdateVal,   // reservation station value
+  input  wire                    rsFull,        // reservation station full signal
+  input  wire                    rsUpdate,      // reservation station update signal
+  input  wire [ROB_WIDTH-1:0]    rsRobIndex,    // reservation station rob index
+  input  wire [31:0]             rsUpdateVal,   // reservation station value
+  output wire                    rsAddValid,    // reservation station add valid signal
+  output wire [RS_OP_WITDTH-1:0] rsAddOp,       // reservation station add op
+  output wire [ROB_WIDTH-1:0]    rsAddRobIndex, // reservation station add rob index
+  output wire [31:0]             rsAddVal1,     // reservation station add value1
+  output wire                    rsAddHasDep1,  // reservation station add value1 dependency
+  output wire [ROB_WIDTH-1:0]    rsAddConstrt1, // reservation station add value1 constraint
+  output wire [31:0]             rsAddVal2,     // reservation station add value2
+  output wire                    rsAddHasDep2,  // reservation station add value2 dependency
+  output wire [ROB_WIDTH-1:0]    rsAddConstrt2, // reservation station add value2 constraint
 
   // Reorder Buffer part
-  input  wire                 robFull,       // reorder buffer full signal
-  input  wire [ROB_WIDTH-1:0] robNext,       // reorder buffer next index
-  input  wire                 robReady,      // reorder buffer ready signal
-  input  wire [31:0]          robValue,      // reorder buffer value
-  output wire [ROB_WIDTH-1:0] robRequest,    // reorder buffer request
-  output wire                 robAddValid,   // reorder buffer add valid signal
-  output wire [1:0]           robAddType,    // reorder buffer add type signal
-  output wire                 robAddReady,   // reorder buffer add ready signal
-  output wire [31:0]          robAddValue,   // reorder buffer add value signal
-  output wire                 robAddDest,    // reorder buffer add destination register signal
-  output wire [31:0]          robAddAddr,    // reorder buffer add address
+  input  wire                    robFull,     // reorder buffer full signal
+  input  wire [ROB_WIDTH-1:0]    robNext,     // reorder buffer next index
+  input  wire                    robReady,    // reorder buffer ready signal
+  input  wire [31:0]             robValue,    // reorder buffer value
+  output wire [ROB_WIDTH-1:0]    robRequest,  // reorder buffer request
+  output wire                    robAddValid, // reorder buffer add valid signal
+  output wire [ROB_OP_WIDTH-1:0] robAddType,  // reorder buffer add type signal
+  output wire                    robAddReady, // reorder buffer add ready signal
+  output wire [31:0]             robAddValue, // reorder buffer add value signal
+  output wire                    robAddDest,  // reorder buffer add destination register signal
+  output wire [31:0]             robAddAddr,  // reorder buffer add address
 
-  // Load/Store Buffer part
-  input  wire                 lsbFull,       // load/store buffer full signal
-  input  wire                 lsbUpdate,     // load/store buffer update signal
-  input  wire [ROB_WIDTH-1:0] lsbRobIndex,   // load/store buffer rob index
-  input  wire [31:0]          lsbUpdateVal,  // load/store buffer value
+  // load & Store Buffer part
+  input  wire                    lsbFull,         // load & store buffer full signal
+  input  wire                    lsbUpdate,       // load & store buffer update signal
+  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,     // load & store buffer rob index
+  input  wire [31:0]             lsbUpdateVal,    // load & store buffer value
+  output wire                    lsbAddValid,     // load & store buffer add valid signal
+  output wire                    lsbAddReadWrite, // load & store buffer read/write select
+  output wire [ROB_WIDTH-1:0]    lsbAddRobId,     // load & store buffer rob index
+  output wire                    lsbAddHasDep,    // load & store buffer has dependency
+  output wire [31:0]             lsbAddBase,      // load & store buffer add base addr
+  output wire [ROB_WIDTH-1:0]    lsbAddConstrtId, // load & store buffer add constraint index (RoB)
+  output wire [31:0]             lsbAddOffset,    // load & store buffer add offset
+  output wire [LSB_OP_WIDTH-1:0] lsbAddOp,        // load & store buffer add op
 
   // Register File part
   input  wire                 rs1Dirty,      // rs1 dirty signal
