@@ -429,10 +429,41 @@ always @(posedge clockIn) begin
             3'b101: begin // SRLI/SRAI
               rsAddVal2Reg <= shiftAmount;
               case (op3)
-                3'b101: rsAddOpReg <= 4'b0110; // SRL
-                3'b101: rsAddOpReg <= 4'b0111; // SRA
+                7'b0000000: rsAddOpReg <= 4'b0110; // SRL
+                7'b0100000: rsAddOpReg <= 4'b0111; // SRA
               endcase
             end
+          endcase
+        end
+        7'b0110011: begin // calculate
+          robAddValidReg   <= 1'b1;
+          robAddTypeReg    <= 2'b00; // Register write
+          robAddReadyReg   <= 1'b0;
+          destReg          <= rd;
+          rfUpdateValidReg <= regUpdate;
+          rsAddValidReg    <= 1'b1;
+          lsbAddValidReg   <= 1'b0;
+          rsAddHasDep1Reg  <= rs1Constraint;
+          rsAddHasDep2Reg  <= rs2Constraint;
+          rsAddVal1Reg     <= rs1RealValue;
+          rsAddVal2Reg     <= rs2RealValue;
+          rsAddConstrt1Reg <= rs1Dependency;
+          rsAddConstrt2Reg <= rs2Dependency;
+          case (op2)
+            3'b000: case (op3)
+              7'b0000000: rsAddOpReg <= 4'b0000; // ADD
+              7'b0100000: rsAddOpReg <= 4'b0001; // SUB
+            endcase
+            3'b001: rsAddOpReg <= 4'b0101; // SLL
+            3'b010: rsAddOpReg <= 4'b1010; // SLT
+            3'b011: rsAddOpReg <= 4'b1011; // SLTU
+            3'b100: rsAddOpReg <= 4'b0010; // XOR
+            3'b101: case (op3)
+              7'b0000000: rsAddOpReg <= 4'b0110; // SRL
+              7'b0100000: rsAddOpReg <= 4'b0111; // SRA
+            endcase
+            3'b110: rsAddOpReg <= 4'b0011; // OR
+            3'b111: rsAddOpReg <= 4'b0100; // AND
           endcase
         end
       endcase
