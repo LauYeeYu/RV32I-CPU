@@ -1,5 +1,6 @@
 module InstructionUnit#(
   parameter ROB_WIDTH = 4,
+  parameter LSB_WIDTH = 4,
   parameter RS_OP_WITDTH = 4,
   parameter ROB_OP_WIDTH = 2,
   parameter LSB_OP_WIDTH = 3
@@ -43,6 +44,7 @@ module InstructionUnit#(
   input  wire                    lsbUpdate,       // load & store buffer update signal
   input  wire [ROB_WIDTH-1:0]    lsbRobIndex,     // load & store buffer rob index
   input  wire [31:0]             lsbUpdateVal,    // load & store buffer value
+  input  wire [LSB_WIDTH-1:0]    lsbNext,         // load & store buffer next index
   output wire                    lsbAddValid,     // load & store buffer add valid signal
   output wire                    lsbAddReadWrite, // load & store buffer read/write select
   output wire [ROB_WIDTH-1:0]    lsbAddRobId,     // load & store buffer rob index
@@ -50,6 +52,7 @@ module InstructionUnit#(
   output wire [31:0]             lsbAddBase,      // load & store buffer add base addr
   output wire [ROB_WIDTH-1:0]    lsbAddConstrtId, // load & store buffer add constraint index (RoB)
   output wire [31:0]             lsbAddOffset,    // load & store buffer add offset
+  output wire [4:0]              lsbAddTarget,    // load & store buffer add target register
   output wire [LSB_OP_WIDTH-1:0] lsbAddOp,        // load & store buffer add op
 
   // Register File part
@@ -102,6 +105,7 @@ reg [31:0]              lsbAddBaseReg;
 reg [ROB_WIDTH-1:0]     lsbAddConstrtIdReg;
 reg [31:0]              lsbAddOffsetReg;
 reg [LSB_OP_WIDTH-1:0]  lsbAddOpReg;
+reg [4:0]               lsbAddTargetReg;
 
 assign instrOutValid = ~stall & ~pending;
 assign instrAddrOut  = PC;
@@ -135,6 +139,7 @@ assign lsbAddBase      = lsbAddBaseReg;
 assign lsbAddConstrtId = lsbAddConstrtIdReg;
 assign lsbAddOffset    = lsbAddOffsetReg;
 assign lsbAddOp        = lsbAddOpReg;
+assign lsbAddTarget    = lsbAddTargetReg;
 
 // Utensils for fetching instruction
 wire lsbUsed = (instrIn[6:0] == 7'b0000011) || (instrIn[6:0] == 7'b0100011);
@@ -356,6 +361,27 @@ always @(posedge clockIn) begin
             3'b010: lsbAddOpReg <= 3'b010; // Word
             3'b100: lsbAddOpReg <= 3'b011; // Unsigned Byte
             3'b101: lsbAddOpReg <= 3'b100; // Unsigned Halfword
+          endcase
+        end
+        7'b0100011: begin // store
+          robAddValidReg     <= 1'b1;
+          robAddTypeReg      <= 2'b10; // Memory write
+          robAddReadyReg     <= 1'b0;
+          destReg            <= lsbNext;
+          rfUpdateValidReg   <= 1'b0;
+          rsAddValidReg      <= 1'b0;
+          lsbAddValidReg     <= 1'b1;
+          lsbAddReadWriteReg <= 1'b0; // Write
+          lsbAddRobIdReg     <= robNext;
+          lsbAddHasDepReg    <= rs1Constraint;
+          lsbAddBaseReg      <= rs1RealValue;
+          lsbAddConstrtIdReg <= rs1Dependency;
+          lsbAddOffsetReg    <= signedExtImm;
+          lsbAddTargetReg    <= rs2;
+          case (op2)
+            3'b000: lsbAddOpReg <= 3'b000; // Byte
+            3'b001: lsbAddOpReg <= 3'b001; // Halfword
+            3'b010: lsbAddOpReg <= 3'b010; // Word
           endcase
         end
       endcase
