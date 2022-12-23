@@ -41,9 +41,9 @@ reg [31:BLOCK_WIDTH] missAddrReg;
 reg                  outRegWriteSuc;
 reg                  readWriteOutReg;
 
-assign dataOut      = outReg;
-assign dataOutValid = outValidReg;
-assign dataWriteSuc = outRegWriteSuc;
+assign dataOut      = mutableAddr ? dataReg : outReg;
+assign dataOutValid = outValidReg | mutableOutValidReg;
+assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
 assign miss         = missReg;
 assign missAddr     = missAddrReg;
 assign readWriteOut = readWriteOutReg;
@@ -53,6 +53,7 @@ reg [1:0]  accessTypeReg;
 reg [31:0] dataAddrReg;
 reg [31:0] dataReg;
 reg        readWriteReg;
+reg        mutableOutValidReg;
 
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] dataPos     = dataAddrReg[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] nextDataPos = dataAddrReg[CACHE_WIDTH-1:BLOCK_WIDTH] + 1;
@@ -69,6 +70,13 @@ always @* begin
     accessTypeReg <= accessType;
     dataReg       <= dataIn;
     readWriteReg  <= readWriteIn;
+  end
+end
+
+always @* begin
+  if (mutableMemInValid) begin
+    mutableOutValidReg <= 1;
+    dataReg            <= mutableMemDataIn;
   end
 end
 
@@ -90,8 +98,7 @@ always @(posedge clkIn) begin
     end
     case (accessTypeReg)
       2'b01: begin // byte
-        if (mutableAddr) begin
-        end else begin
+        if (!mutableAddr) begin
           if (hit) begin
             if (readWriteReg) begin
               // read
@@ -154,8 +161,7 @@ always @(posedge clkIn) begin
       end
 
       2'b10: begin // half word
-        if (mutableAddr) begin
-        end else begin
+        if (!mutableAddr) begin
           if (hit) begin
             if (readWriteReg) begin
               // read
@@ -244,141 +250,143 @@ always @(posedge clkIn) begin
       end
 
       2'b11: begin // word
-        if (hit) begin
-          if (readWriteReg) begin
-            // read
-            outValidReg     <= (blockPos < 4'b1101) || nextHit;
-            missReg         <= 0;
-            outRegWriteSuc  <= 0;
-            readWriteOutReg <= 1;
-            case (blockPos)
-              4'b0000: outReg <= cacheData[dataPos][31:0];
-              4'b0001: outReg <= cacheData[dataPos][39:8];
-              4'b0010: outReg <= cacheData[dataPos][47:16];
-              4'b0011: outReg <= cacheData[dataPos][55:24];
-              4'b0100: outReg <= cacheData[dataPos][63:32];
-              4'b0101: outReg <= cacheData[dataPos][71:40];
-              4'b0110: outReg <= cacheData[dataPos][79:48];
-              4'b0111: outReg <= cacheData[dataPos][87:56];
-              4'b1000: outReg <= cacheData[dataPos][95:64];
-              4'b1001: outReg <= cacheData[dataPos][103:72];
-              4'b1010: outReg <= cacheData[dataPos][111:80];
-              4'b1011: outReg <= cacheData[dataPos][119:88];
-              4'b1100: outReg <= cacheData[dataPos][127:96];
-              4'b1101: begin
-                if (nextHit) begin
-                  outReg <= {cacheData[nextDataPos][7:0], cacheData[dataPos][127:104]};
-                end else begin
-                  // Cache miss
-                  outValidReg         <= 0;
-                  outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-                  missReg             <= 1;
-                  readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
-                  if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+        if (!mutableAddr) begin
+          if (hit) begin
+            if (readWriteReg) begin
+              // read
+              outValidReg     <= (blockPos < 4'b1101) || nextHit;
+              missReg         <= 0;
+              outRegWriteSuc  <= 0;
+              readWriteOutReg <= 1;
+              case (blockPos)
+                4'b0000: outReg <= cacheData[dataPos][31:0];
+                4'b0001: outReg <= cacheData[dataPos][39:8];
+                4'b0010: outReg <= cacheData[dataPos][47:16];
+                4'b0011: outReg <= cacheData[dataPos][55:24];
+                4'b0100: outReg <= cacheData[dataPos][63:32];
+                4'b0101: outReg <= cacheData[dataPos][71:40];
+                4'b0110: outReg <= cacheData[dataPos][79:48];
+                4'b0111: outReg <= cacheData[dataPos][87:56];
+                4'b1000: outReg <= cacheData[dataPos][95:64];
+                4'b1001: outReg <= cacheData[dataPos][103:72];
+                4'b1010: outReg <= cacheData[dataPos][111:80];
+                4'b1011: outReg <= cacheData[dataPos][119:88];
+                4'b1100: outReg <= cacheData[dataPos][127:96];
+                4'b1101: begin
+                  if (nextHit) begin
+                    outReg <= {cacheData[nextDataPos][7:0], cacheData[dataPos][127:104]};
+                  end else begin
+                    // Cache miss
+                    outValidReg         <= 0;
+                    outRegWriteSuc      <= 0;
+                    missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+                    missReg             <= 1;
+                    readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
+                    if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                  end
                 end
-              end
-              4'b1110: begin
-                if (nextHit) begin
-                  outReg <= {cacheData[nextDataPos][15:0], cacheData[dataPos][127:112]};
-                end else begin
-                  // Cache miss
-                  outValidReg         <= 0;
-                  outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-                  missReg             <= 1;
-                  readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
-                  if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                4'b1110: begin
+                  if (nextHit) begin
+                    outReg <= {cacheData[nextDataPos][15:0], cacheData[dataPos][127:112]};
+                  end else begin
+                    // Cache miss
+                    outValidReg         <= 0;
+                    outRegWriteSuc      <= 0;
+                    missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+                    missReg             <= 1;
+                    readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
+                    if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                  end
                 end
-              end
-              4'b1111: begin
-                if (nextHit) begin
-                  outReg <= {cacheData[nextDataPos][23:0], cacheData[dataPos][127:120]};
-                end else begin
-                  // Cache miss
-                  outValidReg         <= 0;
-                  outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-                  missReg             <= 1;
-                  readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
-                  if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                4'b1111: begin
+                  if (nextHit) begin
+                    outReg <= {cacheData[nextDataPos][23:0], cacheData[dataPos][127:120]};
+                  end else begin
+                    // Cache miss
+                    outValidReg         <= 0;
+                    outRegWriteSuc      <= 0;
+                    missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+                    missReg             <= 1;
+                    readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
+                    if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                  end
                 end
-              end
-            endcase
+              endcase
+            end else begin
+              // write
+              outValidReg         <= (blockPos < 4'b1101) || nextHit;
+              cacheDirty[dataPos] <= 1;
+              if ((blockPos < 4'b1101) || nextHit) accessTypeReg <= 2'b00;
+              case (blockPos)
+                4'b0000: cacheData[dataPos][31:0]    <= dataReg[31:0];
+                4'b0001: cacheData[dataPos][39:8]    <= dataReg[31:0];
+                4'b0010: cacheData[dataPos][47:16]   <= dataReg[31:0];
+                4'b0011: cacheData[dataPos][55:24]   <= dataReg[31:0];
+                4'b0100: cacheData[dataPos][63:32]   <= dataReg[31:0];
+                4'b0101: cacheData[dataPos][71:40]   <= dataReg[31:0];
+                4'b0110: cacheData[dataPos][79:48]   <= dataReg[31:0];
+                4'b0111: cacheData[dataPos][87:56]   <= dataReg[31:0];
+                4'b1000: cacheData[dataPos][95:64]   <= dataReg[31:0];
+                4'b1001: cacheData[dataPos][103:72]  <= dataReg[31:0];
+                4'b1010: cacheData[dataPos][111:80]  <= dataReg[31:0];
+                4'b1011: cacheData[dataPos][119:88]  <= dataReg[31:0];
+                4'b1100: cacheData[dataPos][127:96]  <= dataReg[31:0];
+                4'b1101: begin
+                  if (nextHit) begin
+                    cacheData[dataPos][127:104] <= dataReg[31:0];
+                    cacheData[nextDataPos][7:0] <= dataReg[39:32];
+                    cacheDirty[nextDataPos]     <= 1;
+                  end else begin
+                    // Cache miss
+                    outValidReg         <= 0;
+                    outRegWriteSuc      <= 0;
+                    missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+                    missReg             <= 1;
+                    readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
+                    if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                  end
+                end
+                4'b1110: begin
+                  if (nextHit) begin
+                    cacheData[dataPos][127:112] <= dataReg[31:0];
+                    cacheData[nextDataPos][15:0] <= dataReg[39:32];
+                    cacheDirty[nextDataPos]      <= 1;
+                  end else begin
+                    // Cache miss
+                    outValidReg         <= 0;
+                    outRegWriteSuc      <= 0;
+                    missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+                    missReg             <= 1;
+                    readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
+                    if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                  end
+                end
+                4'b1111: begin
+                  if (nextHit) begin
+                    cacheData[dataPos][127:120] <= dataReg[31:0];
+                    cacheData[nextDataPos][23:0] <= dataReg[39:32];
+                    cacheDirty[nextDataPos]      <= 1;
+                  end else begin
+                    // Cache miss
+                    outValidReg         <= 0;
+                    outRegWriteSuc      <= 0;
+                    missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+                    missReg             <= 1;
+                    readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
+                    if (acceptWrite) cacheDirty[dataPos+1] <= 0;
+                  end
+                end
+              endcase
+            end
           end else begin
-            // write
-            outValidReg         <= (blockPos < 4'b1101) || nextHit;
-            cacheDirty[dataPos] <= 1;
-            if ((blockPos < 4'b1101) || nextHit) accessTypeReg <= 2'b00;
-            case (blockPos)
-              4'b0000: cacheData[dataPos][31:0]    <= dataReg[31:0];
-              4'b0001: cacheData[dataPos][39:8]    <= dataReg[31:0];
-              4'b0010: cacheData[dataPos][47:16]   <= dataReg[31:0];
-              4'b0011: cacheData[dataPos][55:24]   <= dataReg[31:0];
-              4'b0100: cacheData[dataPos][63:32]   <= dataReg[31:0];
-              4'b0101: cacheData[dataPos][71:40]   <= dataReg[31:0];
-              4'b0110: cacheData[dataPos][79:48]   <= dataReg[31:0];
-              4'b0111: cacheData[dataPos][87:56]   <= dataReg[31:0];
-              4'b1000: cacheData[dataPos][95:64]   <= dataReg[31:0];
-              4'b1001: cacheData[dataPos][103:72]  <= dataReg[31:0];
-              4'b1010: cacheData[dataPos][111:80]  <= dataReg[31:0];
-              4'b1011: cacheData[dataPos][119:88]  <= dataReg[31:0];
-              4'b1100: cacheData[dataPos][127:96]  <= dataReg[31:0];
-              4'b1101: begin
-                if (nextHit) begin
-                  cacheData[dataPos][127:104] <= dataReg[31:0];
-                  cacheData[nextDataPos][7:0] <= dataReg[39:32];
-                  cacheDirty[nextDataPos]     <= 1;
-                end else begin
-                  // Cache miss
-                  outValidReg         <= 0;
-                  outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-                  missReg             <= 1;
-                  readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
-                  if (acceptWrite) cacheDirty[dataPos+1] <= 0;
-                end
-              end
-              4'b1110: begin
-                if (nextHit) begin
-                  cacheData[dataPos][127:112] <= dataReg[31:0];
-                  cacheData[nextDataPos][15:0] <= dataReg[39:32];
-                  cacheDirty[nextDataPos]      <= 1;
-                end else begin
-                  // Cache miss
-                  outValidReg         <= 0;
-                  outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-                  missReg             <= 1;
-                  readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
-                  if (acceptWrite) cacheDirty[dataPos+1] <= 0;
-                end
-              end
-              4'b1111: begin
-                if (nextHit) begin
-                  cacheData[dataPos][127:120] <= dataReg[31:0];
-                  cacheData[nextDataPos][23:0] <= dataReg[39:32];
-                  cacheDirty[nextDataPos]      <= 1;
-                end else begin
-                  // Cache miss
-                  outValidReg         <= 0;
-                  outRegWriteSuc      <= 0;
-                  missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-                  missReg             <= 1;
-                  readWriteOutReg     <= cacheDirty[dataPos+1] & ~acceptWrite;
-                  if (acceptWrite) cacheDirty[dataPos+1] <= 0;
-                end
-              end
-            endcase
+            // Cache miss
+            outValidReg         <= 0;
+            outRegWriteSuc      <= 0;
+            missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
+            missReg             <= 1;
+            readWriteOutReg     <= cacheDirty[dataPos] & ~acceptWrite;
+            if (acceptWrite) cacheDirty[dataPos] <= 0;
           end
-        end else begin
-          // Cache miss
-          outValidReg         <= 0;
-          outRegWriteSuc      <= 0;
-          missAddrReg         <= dataAddrReg[31:BLOCK_WIDTH];
-          missReg             <= 1;
-          readWriteOutReg     <= cacheDirty[dataPos] & ~acceptWrite;
-          if (acceptWrite) cacheDirty[dataPos] <= 0;
         end
       end
 
