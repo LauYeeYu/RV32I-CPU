@@ -60,7 +60,7 @@ wire hit = cacheValid[dataPos] && (cacheTag[dataPos] == dataAddrReg[31:CACHE_WID
 wire nextHit = cacheValid[nextDataPos] &&
   (cacheTag[nextDataPos] == ((dataAddrReg + BLOCK_SIZE) >> CACHE_WIDTH));
 wire blockPos = dataAddrReg[BLOCK_WIDTH-1:0];
-wire mutableAddr = dataAddrReg[17:16] == 2'b11;
+wire mutableAddr = (accessTypeReg != 2'b00) && (dataAddrReg[17:16] == 2'b11);
 
 always @* begin
   if (accessType != 2'b00) begin
