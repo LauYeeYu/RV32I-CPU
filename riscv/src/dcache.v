@@ -28,10 +28,10 @@ module DCache #(
 );
 
 // cache block
-reg [CACHE_SIZE-1:0] cacheValid;
-reg [CACHE_SIZE-1:0] cacheDirty;
-reg [CACHE_SIZE-1:0] cacheTag  [31:BLOCK_WIDTH];
-reg [CACHE_SIZE-1:0] cacheData [BLOCK_SIZE*8-1:0];
+reg [CACHE_SIZE-1:0]   cacheValid;
+reg [CACHE_SIZE-1:0]   cacheDirty;
+reg [31:BLOCK_WIDTH]   cacheTag  [CACHE_SIZE-1:0];
+reg [BLOCK_SIZE*8-1:0] cacheData [CACHE_SIZE-1:0];
 
 // output registers
 reg [31:0]           outReg;

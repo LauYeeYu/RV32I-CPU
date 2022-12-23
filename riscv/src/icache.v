@@ -17,9 +17,9 @@ module ICache #(
   output wire [31:0]             instrAddrOut   // instruction address (Instruction Unit)
 );
 
-reg [CACHE_SIZE-1:0] cacheValid;
-reg [CACHE_SIZE-1:0] cacheTag  [31:BLOCK_WIDTH+CACHE_WIDTH];
-reg [CACHE_SIZE-1:0] cacheData [3:0][31:0];
+reg [CACHE_SIZE-1:0]             cacheValid;
+reg [31:BLOCK_WIDTH+CACHE_WIDTH] cacheTag [CACHE_SIZE-1:0];
+reg [31:0]                       cacheData[CACHE_SIZE-1:0][3:0];
 
 // Utensils
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] instrPos = instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
