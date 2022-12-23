@@ -52,6 +52,7 @@ assign readWriteOut = readWriteOutReg;
 reg [1:0]  accessTypeReg;
 reg [31:0] dataAddrReg;
 reg [31:0] dataReg;
+reg        readWriteReg;
 
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] dataPos     = dataAddrReg[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] nextDataPos = dataAddrReg[CACHE_WIDTH-1:BLOCK_WIDTH] + 1;
@@ -67,6 +68,7 @@ always @* begin
     dataAddrReg   <= dataAddrIn;
     accessTypeReg <= accessType;
     dataReg       <= dataIn;
+    readWriteReg  <= readWriteIn;
   end
 end
 
@@ -90,7 +92,7 @@ always @(posedge clkIn) begin
         if (mutableAddr) begin
         end else begin
           if (hit) begin
-            if (readWriteIn) begin
+            if (readWriteReg) begin
               // read
               outValidReg     <= 1;
               missReg         <= 0;
@@ -154,7 +156,7 @@ always @(posedge clkIn) begin
         if (mutableAddr) begin
         end else begin
           if (hit) begin
-            if (readWriteIn) begin
+            if (readWriteReg) begin
               // read
               outValidReg     <= (blockPos != 4'b1111) || nextHit;
               missReg         <= 0;
@@ -242,7 +244,7 @@ always @(posedge clkIn) begin
 
       2'b11: begin // word
         if (hit) begin
-          if (readWriteIn) begin
+          if (readWriteReg) begin
             // read
             outValidReg     <= (blockPos < 4'b1101) || nextHit;
             missReg         <= 0;
