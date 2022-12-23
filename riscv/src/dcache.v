@@ -80,6 +80,7 @@ always @(posedge clkIn) begin
     missReg         <= 0;
     outRegWriteSuc  <= 0;
     readWriteOutReg <= 1;
+    accessTypeReg   <= 2'b00;
   end else begin
     if (memDataValid) begin
       cacheValid[memPos] <= 1;
