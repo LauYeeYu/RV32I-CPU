@@ -68,6 +68,9 @@ When the `dataValid` signal is high, the Cache module will find the data in
 the [Data Cache module](#data-cache) and send it through the `dataOut` signal
 (the `dataOutValid` is high then).
 
+When the dcache module encounters IO port data, the cache module will handle
+this request instead.
+
 ## Instruction Cache
 
 The Instruction Cache module is located at `src/icache.v`.
@@ -140,24 +143,27 @@ module DCache #(
   parameter CACHE_WIDTH = 9,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
-  input  wire                    clkIn,        // system clock (from CPU)
-  input  wire                    resetIn,      // resetIn
-  input  wire [1:0]              accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  input  wire                    readWriteIn,  // read/write select (read: 1, write: 0)
-  input  wire [31:0]             dataAddrIn,   // data address (Load/Store Buffer)
-  input  wire [31:0]             dataIn,       // data to write
-  input  wire                    memDataValid, // data valid signal (Instruction Unit)
-  input  wire [31:BLOCK_WIDTH]   memAddr,      // memory address
-  input  wire [BLOCK_SIZE*8-1:0] memDataIn,    // data to loaded from RAM
-  input  wire                    acceptWrite,  // write accept signal (Cache)
-  output wire                    miss,         // miss signal (for input and output)
-  output wire [31:BLOCK_WIDTH]   missAddr,     // miss address (for input and output)
-  output wire                    readWriteOut, // read/write select for mem (read: 1, write: 0)
-  output wire [31:BLOCK_WIDTH]   memAddrOut,   // data address
-  output wire [BLOCK_SIZE*8-1:0] memOut,       // data to write
-  output wire                    dataOutValid, // instruction output valid signal (Load/Store Buffer)
-  output wire [31:0]             dataOut,      // instruction (Load/Store Buffer)
-  output wire                    dataWriteSuc  // data write success signal (Load Store Buffer)
+  input  wire                    clkIn,             // system clock (from CPU)
+  input  wire                    resetIn,           // resetIn
+  input  wire [1:0]              accessType,        // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
+  input  wire                    readWriteIn,       // read/write select (read: 1, write: 0)
+  input  wire [31:0]             dataAddrIn,        // data address (Load/Store Buffer)
+  input  wire [31:0]             dataIn,            // data to write
+  input  wire                    memDataValid,      // data valid signal (Instruction Unit)
+  input  wire [31:BLOCK_WIDTH]   memAddr,           // memory address
+  input  wire [BLOCK_SIZE*8-1:0] memDataIn,         // data to loaded from RAM
+  input  wire                    acceptWrite,       // write accept signal (Cache)
+  input  wire                    mutableMemInValid, // mutable memory valid signal
+  input  wire [31:0]             mutableMemDataIn,  // data to load from IO
+  input  wire                    mutableWriteSuc,   // mutable write success signal
+  output wire                    miss,              // miss signal (for input and output)
+  output wire [31:BLOCK_WIDTH]   missAddr,          // miss address (for input and output)
+  output wire                    readWriteOut,      // read/write select for mem (read: 1, write: 0)
+  output wire [31:BLOCK_WIDTH]   memAddrOut,        // data address
+  output wire [BLOCK_SIZE*8-1:0] memOut,            // data to write
+  output wire                    dataOutValid,      // instruction output valid signal (Load/Store Buffer)
+  output wire [31:0]             dataOut,           // instruction (Load/Store Buffer)
+  output wire                    dataWriteSuc       // data write success signal (Load Store Buffer)
 );
 endmodule
 ```
@@ -167,6 +173,10 @@ If the `resetIn` signal is high, the data cache will reset all stored cache.
 The module will work when the `accessType` signal is not `2'b00`. `2'b01` means
 the operation is done in byte, `2'b10` means the operation is done in half word,
 and `2'b11` means the operation is done in word.
+
+For the I/O port data (called *mutable* in cache module), the dcache module
+will wait for the cache to send the data back (using `mutableMemInValid`,
+`mutableMemDataIn` and `mutableWriteSuc`).
 
 For the read operation (when `readWriteIn` is high), the data cache will check
 whether the data is in the cache. If the data is in the cache, the data cache
