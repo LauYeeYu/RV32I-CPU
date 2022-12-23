@@ -88,7 +88,6 @@ always @(posedge clkIn) begin
     case (accessTypeReg)
       2'b01: begin // byte
         if (mutableAddr) begin
-
         end else begin
           if (hit) begin
             if (readWriteIn) begin
@@ -119,6 +118,7 @@ always @(posedge clkIn) begin
               // write
               outRegWriteSuc      <= 1;
               cacheDirty[dataPos] <= 1;
+              accessTypeReg       <= 2'b00;
               case (blockPos)
                 4'b0000: cacheData[dataPos][7:0]     <= dataReg[7:0];
                 4'b0001: cacheData[dataPos][15:8]    <= dataReg[7:0];
@@ -192,8 +192,9 @@ always @(posedge clkIn) begin
               endcase
             end else begin
               // write
-              outRegWriteSuc <= (blockPos != 4'b1111) || nextHit;
+              outRegWriteSuc      <= (blockPos != 4'b1111) || nextHit;
               cacheDirty[dataPos] <= 1;
+              if ((blockPos != 4'b1111) || nextHit) accessTypeReg <= 2'b00;
               case (blockPos)
                 4'b0000: cacheData[dataPos][15:0]    <= dataReg[15:0];
                 4'b0001: cacheData[dataPos][23:8]    <= dataReg[15:0];
@@ -305,6 +306,7 @@ always @(posedge clkIn) begin
             // write
             outValidReg         <= (blockPos < 4'b1101) || nextHit;
             cacheDirty[dataPos] <= 1;
+            if ((blockPos < 4'b1101) || nextHit) accessTypeReg <= 2'b00;
             case (blockPos)
               4'b0000: cacheData[dataPos][31:0]    <= dataReg[31:0];
               4'b0001: cacheData[dataPos][39:8]    <= dataReg[31:0];
@@ -375,6 +377,12 @@ always @(posedge clkIn) begin
           readWriteOutReg     <= cacheDirty[dataPos] & ~acceptWrite;
           if (acceptWrite) cacheDirty[dataPos] <= 0;
         end
+      end
+
+      2'b00: begin
+        outValidReg    <= 0;
+        outRegWriteSuc <= 0;
+        missReg        <= 0;
       end
     endcase
   end
