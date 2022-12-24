@@ -80,14 +80,17 @@ is ready, we commit this data into the register.
 
 See the [document for Reorder Buffer](reorder_buffer.md) for more details.
 
-### Reservation Station
+### Reservation Station & ALU
 
 The reservation station is a table that records the pending or executing
 instructions. When an instruction have just finished calculating, the data
 is sent to the RoB for committing this result.
 
-See the [document for Reservation Station](reservation_station.md) for more
-details.
+The ALU section is also included in the Reservation Station Module in order
+to reduce the number of wires and the latency caused by the distance of wires.
+
+See the [document for Reservation Station & ALU](reservation_station.md) for
+more details.
 
 ### Register File
 
