@@ -135,10 +135,11 @@ wire [RS_WIDTH-1:0] nextCalc = ready[0] ? 4'b0000 :
                                ready[13] ? 4'b1101 :
                                ready[14] ? 4'b1110 :
                                            4'b1111;
-wire v1ToCalc    = value1[nextCalc];
-wire v2ToCalc    = value2[nextCalc];
-wire opToCalc    = op[nextCalc];
-wire robIdToCalc = robIndex[nextCalc];
+wire v1ToCalc     = value1[nextCalc];
+wire v2ToCalc     = value2[nextCalc];
+wire opToCalc     = op[nextCalc];
+wire robIdToCalc  = robIndex[nextCalc];
+wire occupiedNext = occupied + (addValid ? 1'b1 : 1'b0) - (hasNextCalc ? 1'b1 : 1'b0);
 
 assign full = occupied > 13;
 
@@ -160,8 +161,8 @@ always @(posedge clockIn) begin
       hasDep2  [nextFree] <= hasDep2Merged;
       constrt2 [nextFree] <= addConstrt2;
       op       [nextFree] <= addOp;
-      if (!hasNextCalc) occupied <= occupied + 1;
     end
+    occupied <= occupiedNext;
 
     // send the update data out
     updateValidReg    <= calculating;
@@ -189,12 +190,13 @@ always @(posedge clockIn) begin
     end
 
     // Dispatch the nextCalc
-    calculating <= hasNextCalc;
-    v1Cal       <= v1ToCalc;
-    v2Cal       <= v2ToCalc;
-    opCal       <= opToCalc;
-    robIdCal    <= robIdToCalc;
-    rsIdCal     <= nextCalc;
+    calculating     <= hasNextCalc;
+    v1Cal           <= v1ToCalc;
+    v2Cal           <= v2ToCalc;
+    opCal           <= opToCalc;
+    robIdCal        <= robIdToCalc;
+    rsIdCal         <= nextCalc;
+    valid[nextCalc] <= 0;
   end
 end
 
