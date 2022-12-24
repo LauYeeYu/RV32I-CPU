@@ -163,17 +163,17 @@ wire [31:0] storeDiff     = {{20{instrReg[31]}}, instrReg[31:25], instrReg[11:7]
 wire [31:0] shiftAmount   = {27'b0, instrReg[24:20]};
 wire        regUpdate     = rd != 5'b00000;
 wire        rs1Constraint = rs1Dirty &&
-                            (rsUpdate && (rs1Dependency == rsRobIndex) ||
-                             lsbUpdate && (rs1Dependency == lsbRobIndex));
+                            !((rsUpdate  && (rs1Dependency == rsRobIndex)) ||
+                              (lsbUpdate && (rs1Dependency == lsbRobIndex)));
 wire [31:0] rs1RealValue  = rs1Dirty ?
-                              (rsUpdate && (rs1Dependency == rsRobIndex)) ? rsUpdateVal :
+                              (rsUpdate  && (rs1Dependency == rsRobIndex)) ? rsUpdateVal :
                               (lsbUpdate && (rs1Dependency == lsbRobIndex)) ? lsbUpdateVal : 0 :
                             rs1Value;
 wire       rs2Constraint = rs2Dirty &&
-                            (rsUpdate && (rs2Dependency == rsRobIndex) ||
-                             lsbUpdate && (rs2Dependency == lsbRobIndex));
+                            !((rsUpdate  && (rs2Dependency == rsRobIndex)) ||
+                              (lsbUpdate && (rs2Dependency == lsbRobIndex)));
 wire [31:0] rs2RealValue = rs2Dirty ?
-                              (rsUpdate && (rs2Dependency == rsRobIndex)) ? rsUpdateVal :
+                              (rsUpdate  && (rs2Dependency == rsRobIndex)) ? rsUpdateVal :
                               (lsbUpdate && (rs2Dependency == lsbRobIndex)) ? lsbUpdateVal : 0 :
                             rs2Value;
 
