@@ -25,9 +25,9 @@ module RegisterFile #(
   input wire [4:0] reg2,    // register 2
 
   // Instruction Unit part
-  input  wire                 rfUpdateValid, // register file update valid signal
-  input  wire [4:0]           rfUpdateDest,  // register file update destination
-  input  wire [ROB_WIDTH-1:0] rfUpdateRobId, // register file update value
+  input  wire                 rfUpdateValid, // instruction unit update valid signal
+  input  wire [4:0]           rfUpdateDest,  // instruction unit update destination
+  input  wire [ROB_WIDTH-1:0] rfUpdateRobId, // instruction unit update value
   output wire                 rs1Dirty,      // rs1 dirty signal
   output wire [ROB_WIDTH-1:0] rs1Dependency, // rs1 dependency
   output wire [31:0]          rs1Value,      // rs1 value
