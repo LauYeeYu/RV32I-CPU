@@ -1,5 +1,12 @@
 # Reservation Station & ALU
 
+The reservation station & ALU handles the calculation part of instructions.
+It supports 13 types of instructions, including 5 arithmetic operations
+(addition, subtraction, XOR, OR and AND), 3 shift operations (left shift,
+logical right shift and arithmetic right shift), 4 comparison operations
+(equal operation, unequal operation, less than operation, unsigned less than
+operation).
+
 ## Reservation Station Operators
 | num | binary  |        operator        | abbr |
 |:---:|:-------:|:----------------------:|:----:|
