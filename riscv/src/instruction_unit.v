@@ -1,4 +1,4 @@
-module InstructionUnit#(
+module InstructionUnit #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
   parameter RS_OP_WITDTH = 4,
@@ -64,7 +64,7 @@ module InstructionUnit#(
   input  wire [31:0]          rs2Value,      // rs2 value
   output wire                 rfUpdateValid, // register file update valid signal
   output wire [4:0]           rfUpdateDest,  // register file update destination
-  output wire [ROB_WIDTH-1:0] rfUpdateIndex, // register file update value
+  output wire [ROB_WIDTH-1:0] rfUpdateRobId, // register file update value
 
   // Predictor part
   input  wire                 jump,          // jump signal
@@ -179,10 +179,10 @@ wire [31:0] rs2RealValue = rs2Dirty ?
 
 always @(posedge clockIn) begin
   if (resetIn) begin
-    PC              <= 32'b0;
-    stall           <= 1'b0;
-    stallDependency <= 4'b0000;
-    instrRegValid   <= 1'b0;
+    PC               <= 32'b0;
+    stall            <= 1'b0;
+    stallDependency  <= 4'b0000;
+    instrRegValid    <= 1'b0;
     robAddValidReg   <= 1'b0;
     rsAddValidReg    <= 1'b0;
     rfUpdateValidReg <= 1'b0;

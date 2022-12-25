@@ -60,10 +60,10 @@ assign AluResult[AND] = v1Cal & v2Cal;
 assign AluResult[SLL] = v1Cal << v2Cal;
 assign AluResult[SRL] = v1Cal >> v2Cal;
 assign AluResult[SRA] = v1Cal >>> v2Cal;
-assign AluResult[EQ]  = v1Cal  == v2Cal ? 1'b1 : 1'b0;
-assign AluResult[NE]  = v1Cal  != v2Cal ? 1'b1 : 1'b0;
-assign AluResult[LT]  = $signed(v1Cal) < $signed(v2Cal) ? 1'b1 : 1'b0;
-assign AluResult[LTU] = v1Cal < v2Cal ? 1'b1 : 1'b0;
+assign AluResult[EQ]  = v1Cal  == v2Cal ? 32'b1 : 32'b0;
+assign AluResult[NE]  = v1Cal  != v2Cal ? 32'b1 : 32'b0;
+assign AluResult[LT]  = $signed(v1Cal) < $signed(v2Cal) ? 32'b1 : 32'b0;
+assign AluResult[LTU] = v1Cal < v2Cal ? 32'b1 : 32'b0;
 
 // Reservation Station section
 reg                 updateValidReg;
@@ -118,8 +118,8 @@ wire [RS_WIDTH-1:0] nextFree = ~valid[0]  ? 4'b0000 :
                                ~valid[13] ? 4'b1101 :
                                ~valid[14] ? 4'b1110 :
                                             4'b1111;
-wire hasNextCalc = ready != 0;
-wire [RS_WIDTH-1:0] nextCalc = ready[0] ? 4'b0000 :
+wire hasNextCalc = (ready != 0);
+wire [RS_WIDTH-1:0] nextCalc = ready[0]  ? 4'b0000 :
                                ready[1]  ? 4'b0001 :
                                ready[2]  ? 4'b0010 :
                                ready[3]  ? 4'b0011 :
@@ -139,9 +139,10 @@ wire v1ToCalc     = value1[nextCalc];
 wire v2ToCalc     = value2[nextCalc];
 wire opToCalc     = op[nextCalc];
 wire robIdToCalc  = robIndex[nextCalc];
-wire occupiedNext = occupied + (addValid ? 1'b1 : 1'b0) - (hasNextCalc ? 1'b1 : 1'b0);
+wire occupiedNext = occupied + (addValid ? 1'b1 : 1'b0)
+                             - (hasNextCalc ? 1'b1 : 1'b0);
 
-assign full = occupied > 13;
+assign full = (occupied > 13);
 
 integer i;
 always @(posedge clockIn) begin
