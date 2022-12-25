@@ -42,7 +42,7 @@ instructions), the PC is modified in the issuing stage.
 The interfaces are listed below:
 
 ```verilog
-module InstructionUnit#(
+module InstructionUnit #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
   parameter RS_OP_WITDTH = 4,
@@ -77,10 +77,12 @@ module InstructionUnit#(
   input  wire [31:0]             robValue,    // reorder buffer value
   output wire [ROB_WIDTH-1:0]    robRequest,  // reorder buffer request
   output wire                    robAddValid, // reorder buffer add valid signal
+  output wire [ROB_WIDTH-1:0]    robAddIndex, // reorder buffer add index
   output wire [ROB_OP_WIDTH-1:0] robAddType,  // reorder buffer add type signal
   output wire                    robAddReady, // reorder buffer add ready signal
   output wire [31:0]             robAddValue, // reorder buffer add value signal
-  output wire                    robAddDest,  // reorder buffer add destination register signal
+  output wire                    robAddjump,  // reorder buffer add jump signal
+  output wire [4:0]              robAddDest,  // reorder buffer add destination register signal
   output wire [31:0]             robAddAddr,  // reorder buffer add address
 
   // load & Store Buffer part
@@ -108,12 +110,10 @@ module InstructionUnit#(
   input  wire [31:0]          rs2Value,      // rs2 value
   output wire                 rfUpdateValid, // register file update valid signal
   output wire [4:0]           rfUpdateDest,  // register file update destination
-  output wire [ROB_WIDTH-1:0] rfUpdateIndex, // register file update value
+  output wire [ROB_WIDTH-1:0] rfUpdateRobId, // register file update value
 
   // Predictor part
-  input  wire                 jump,          // jump signal
-  output wire                 instrOutValid, // instruction output valid signal (PC)
-  output wire [31:0]          instrAddrOut   // instruction address (PC)
+  input wire jump // jump signal
 );
 endmodule
 ```
