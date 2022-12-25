@@ -33,10 +33,12 @@ module InstructionUnit #(
   input  wire [31:0]             robValue,    // reorder buffer value
   output wire [ROB_WIDTH-1:0]    robRequest,  // reorder buffer request
   output wire                    robAddValid, // reorder buffer add valid signal
+  output wire [ROB_WIDTH-1:0]    robAddIndex, // reorder buffer add index
   output wire [ROB_OP_WIDTH-1:0] robAddType,  // reorder buffer add type signal
   output wire                    robAddReady, // reorder buffer add ready signal
   output wire [31:0]             robAddValue, // reorder buffer add value signal
-  output wire                    robAddDest,  // reorder buffer add destination register signal
+  output wire                    robAddjump,  // reorder buffer add jump signal
+  output wire [4:0]              robAddDest,  // reorder buffer add destination register signal
   output wire [31:0]             robAddAddr,  // reorder buffer add address
 
   // load & Store Buffer part
@@ -79,12 +81,14 @@ reg                    instrRegValid;
 reg                    stall;
 reg [ROB_WIDTH-1:0]    stallDependency;
 reg                    pending; // pending for the next PC information
+
 reg                    robAddValidReg;
 reg [ROB_OP_WIDTH-1:0] robAddTypeReg;
 reg                    robAddReadyReg;
 reg [31:0]             robValueReg;
-reg [4:0]              destReg;
 reg [31:0]             robAddrReg;
+reg                    jumpReg;
+reg [4:0]              destReg;
 reg                    rfUpdateValidReg;
 
 reg                    rsAddValidReg;
@@ -116,8 +120,9 @@ assign robAddReady   = robAddReadyReg;
 assign robAddValue   = robValueReg;
 assign robAddDest    = destReg;
 assign robAddAddr    = robAddrReg;
+assign robAddjump    = jumpReg;
 
-assign rfUpdateIndex = robNext;
+assign rfUpdateRobId = robNext;
 assign rfUpdateDest  = destReg;
 assign rfUpdateValid = rfUpdateValidReg;
 
@@ -281,6 +286,7 @@ always @(posedge clockIn) begin
           PC               <= jump ? PC + branchDiff : PC + 4;
           robAddTypeReg    <= 2'b01; // Branch
           robAddReadyReg   <= 1'b0;
+          jumpReg          <= jump;
           robAddrReg       <= jump ? PC + 4 : PC + branchDiff;
           rfUpdateValidReg <= 1'b0;
           rsAddValidReg    <= 1'b0;
