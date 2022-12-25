@@ -81,6 +81,7 @@ reg [ROB_WIDTH-1:0]    stallDependency;
 reg                    pending; // pending for the next PC information
 
 reg                    robAddValidReg;
+reg [ROB_WIDTH-1:0]    robAddIndexReg;
 reg [ROB_OP_WIDTH-1:0] robAddTypeReg;
 reg                    robAddReadyReg;
 reg [31:0]             robValueReg;
@@ -111,6 +112,7 @@ reg [4:0]               lsbAddTargetReg;
 
 assign robRequest    = stallDependency;
 assign robAddValid   = robAddValidReg;
+assign robAddIndex   = robAddIndexReg;
 assign robAddType    = robAddTypeReg;
 assign robAddReady   = robAddReadyReg;
 assign robAddValue   = robValueReg;
@@ -179,6 +181,7 @@ wire [31:0] rs2RealValue = rs2Dirty ?
                             rs2Value;
 
 always @(posedge clockIn) begin
+  robAddIndexReg <= robNext;
   if (resetIn) begin
     PC               <= 32'b0;
     stall            <= 1'b0;
