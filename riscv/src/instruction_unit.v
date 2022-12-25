@@ -69,9 +69,7 @@ module InstructionUnit #(
   output wire [ROB_WIDTH-1:0] rfUpdateRobId, // register file update value
 
   // Predictor part
-  input  wire                 jump,          // jump signal
-  output wire                 instrOutValid, // instruction output valid signal (PC)
-  output wire [31:0]          instrAddrOut   // instruction address (PC)
+  input wire jump // jump signal
 );
 
 reg [31:0]             PC;
@@ -111,8 +109,6 @@ reg [31:0]              lsbAddOffsetReg;
 reg [LSB_OP_WIDTH-1:0]  lsbAddOpReg;
 reg [4:0]               lsbAddTargetReg;
 
-assign instrOutValid = ~stall & ~pending;
-assign instrAddrOut  = PC;
 assign robRequest    = stallDependency;
 assign robAddValid   = robAddValidReg;
 assign robAddType    = robAddTypeReg;
