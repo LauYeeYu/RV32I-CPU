@@ -6,6 +6,10 @@ module RegisterFile #(
   input wire [4:0] reg1,    // register 1
   input wire [4:0] reg2,    // register 2
 
+  // Load & Store Buffer part
+  input  wire [4:0]  lsbRegIndex, // register index of the destination register
+  output wire [31:0] lsbRegValue, // register value of the destination register
+
   // Instruction Unit part
   input  wire                 rfUpdateValid, // instruction unit update valid signal
   input  wire [4:0]           rfUpdateDest,  // instruction unit update destination
@@ -20,7 +24,7 @@ module RegisterFile #(
   // Reorder Buffer part
   input  wire                 regUpdateValid, // reorder buffer update valid signal
   input  wire [4:0]           regUpdateDest,  // reorder buffer update destination
-  input  wire [31:0]          regValue,       // reorder buffer update value
+  input  wire [31:0]          regUpdateValue, // reorder buffer update value
   input  wire [ROB_WIDTH-1:0] regUpdateRobId, // reorder buffer update rob id
   input  wire                 robRs1Ready,    // rs1 ready signal
   input  wire [31:0]          robRs1Value,    // rs1 value
@@ -49,13 +53,16 @@ end
 // Update the value of register
 always @* begin
   if (regUpdateValid && rfUpdateDest != 5'b00000) begin
-    register[regUpdateDest] <= regValue;
+    register[regUpdateDest] <= regUpdateValue;
     if (regUpdateRobId == constraintId[regUpdateDest] &&
         !(rfUpdateValid && rfUpdateDest == regUpdateDest)) begin
       hasconstraint[regUpdateDest] <= 1'b0;
     end
   end
 end
+
+// Handle the request from load & store buffer
+assign lsbRegValue = register[lsbRegIndex];
 
 // Handle the request from instruction unit
 assign robRs1Dep = constraintId[reg1Reg];
