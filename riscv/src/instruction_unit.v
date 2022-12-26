@@ -7,6 +7,8 @@ module InstructionUnit #(
 ) (
   input  wire        resetIn,      // resetIn
   input  wire        clockIn,      // clockIn
+  input  wire        clearIn,      // clear signal (when branch prediction is wrong)
+  input  wire [31:0] newPc,        // the correct PC value
   input  wire        instrInValid, // instruction valid signal (icache)
   input  wire [31:0] instrIn,      // data valid signal (icache)
   input  wire [31:0] instrAddr,    // instruction address (icache)
@@ -182,8 +184,8 @@ wire [31:0] rs2RealValue = rs2Dirty ?
 
 always @(posedge clockIn) begin
   robAddIndexReg <= robNext;
-  if (resetIn) begin
-    PC               <= 32'b0;
+  if (resetIn || clearIn) begin
+    PC               <= clearIn ? newPc : 32'b0;
     stall            <= 1'b0;
     stallDependency  <= 4'b0000;
     instrRegValid    <= 1'b0;
