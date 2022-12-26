@@ -33,10 +33,10 @@ module ReorderBuffer #(
   parameter ROB_SIZE = 2**ROB_WIDTH,
   parameter ROB_OP_WIDTH = 2
 ) (
-  input  wire resetIn, // resetIn
-  input  wire clockIn, // clockIn
-  output wire clear,   // clear signal (when branch prediction is wrong)
-  output wire newPc,   // the correct PC value
+  input  wire        resetIn, // resetIn
+  input  wire        clockIn, // clockIn
+  output wire        clear,   // clear signal (when branch prediction is wrong)
+  output wire [31:0] newPc,   // the correct PC value
 
   // Reservation Station part
   input  wire                 rsUpdate,    // reservation station update signal
