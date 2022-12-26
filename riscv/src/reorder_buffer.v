@@ -50,7 +50,6 @@ module ReorderBuffer #(
 
 reg                 clearReg;
 reg [31:0]          newPcReg;
-reg                 writeValidReg;
 reg                 regUpdateValidReg;
 reg [4:0]           regUpdateDestReg;
 reg [31:0]          regValueReg;
@@ -58,7 +57,6 @@ reg [ROB_WIDTH-1:0] regUpdateRobIdReg;
 
 assign clear          = clearReg;
 assign newPc          = newPcReg;
-assign writeValid     = writeValidReg;
 assign regUpdateValid = regUpdateValidReg;
 assign regUpdateDest  = regUpdateDestReg;
 assign regValue       = regValueReg;
@@ -97,6 +95,7 @@ assign rs1Value    = value[rs1Dep];
 assign rs2Ready    = valid[rs1Dep] & ready[rs2Dep];
 assign rs2Value    = value[rs2Dep];
 assign robBeginId  = beginIndex;
+assign writeValid  = notEmpty;
 
 always @* begin
   if (addValid) begin
@@ -133,15 +132,12 @@ always @(posedge clockIn) begin
     endIndex          <= {ROB_WIDTH{1'b0}};
     valid             <= {ROB_SIZE{1'b0}};
     clearReg          <= 1'b0;
-    writeValidReg     <= 1'b0;
     regUpdateValidReg <= 1'b0;
   end else if (clearReg) begin
     clearReg          <= 1'b0;
-    writeValidReg     <= 1'b0;
     regUpdateValidReg <= 1'b0;
   end else if (notEmpty) begin
     regUpdateValidReg <= needUpdateReg;
-    writeValidReg     <= (topType == 2'b10);
     case (topType)
       2'b00: begin // register write
         if (ready) begin
@@ -167,7 +163,6 @@ always @(posedge clockIn) begin
       end
     endcase
   end else begin
-    writeValidReg     <= 1'b0;
     regUpdateValidReg <= 1'b0;
   end
 end
