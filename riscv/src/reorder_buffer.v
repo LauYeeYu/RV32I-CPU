@@ -17,9 +17,8 @@ module ReorderBuffer #(
   input  wire                 lsbUpdate,    // load & store buffer update signal
   input  wire [ROB_WIDTH-1:0] lsbRobIndex,  // load & store buffer rob index
   input  wire [31:0]          lsbUpdateVal, // load & store buffer value
-  output wire                 robBeginId,   // begin index of the load & store buffer
+  output wire [ROB_WIDTH-1:0] robBeginId,   // begin index of the load & store buffer
   output wire                 writeValid,   // has committed signal
-  output wire [ROB_WIDTH-1:0] committedId,  // committed index of the load & store buffer
 
   // Instruction Unit part
   input  wire [ROB_WIDTH-1:0]    request,  // instruction unit request
@@ -98,7 +97,6 @@ assign rs1Value    = value[rs1Dep];
 assign rs2Ready    = valid[rs1Dep] & ready[rs2Dep];
 assign rs2Value    = value[rs2Dep];
 assign robBeginId  = beginIndex;
-assign committedId = beginIndex;
 
 always @* begin
   if (addValid) begin
