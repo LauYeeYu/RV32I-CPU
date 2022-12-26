@@ -48,7 +48,6 @@ module InstructionUnit #(
   input  wire                    lsbUpdate,       // load & store buffer update signal
   input  wire [ROB_WIDTH-1:0]    lsbRobIndex,     // load & store buffer rob index
   input  wire [31:0]             lsbUpdateVal,    // load & store buffer value
-  input  wire [LSB_WIDTH-1:0]    lsbNext,         // load & store buffer next index
   output wire                    lsbAddValid,     // load & store buffer add valid signal
   output wire                    lsbAddReadWrite, // load & store buffer read/write select
   output wire [ROB_WIDTH-1:0]    lsbAddRobId,     // load & store buffer rob index
@@ -375,7 +374,6 @@ always @(posedge clockIn) begin
           robAddValidReg     <= 1'b1;
           robAddTypeReg      <= 2'b10; // Memory write
           robAddReadyReg     <= 1'b0;
-          destReg            <= lsbNext;
           rfUpdateValidReg   <= 1'b0;
           rsAddValidReg      <= 1'b0;
           lsbAddValidReg     <= 1'b1;
