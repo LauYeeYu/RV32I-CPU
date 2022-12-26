@@ -134,7 +134,6 @@ always @(posedge clockIn) begin
     beginIndex        <= {ROB_WIDTH{1'b0}};
     endIndex          <= {ROB_WIDTH{1'b0}};
     valid             <= {ROB_SIZE{1'b0}};
-    ready             <= {ROB_SIZE{1'b0}};
     clearReg          <= 1'b0;
     writeValidReg     <= 1'b0;
     regUpdateValidReg <= 1'b0;
@@ -160,8 +159,11 @@ always @(posedge clockIn) begin
           valid[beginIndex] <= 1'b0;
           beginIndex        <= beginIndex + 1'b1;
           if (topJump != value[0]) begin
-            newPcReg <= topMissAddr;
-            clearReg <= 1'b1;
+            beginIndex <= {ROB_WIDTH{1'b0}};
+            endIndex   <= {ROB_WIDTH{1'b0}};
+            valid      <= {ROB_SIZE{1'b0}};
+            newPcReg   <= topMissAddr;
+            clearReg   <= 1'b1;
           end
         end
       end
