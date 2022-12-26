@@ -8,9 +8,9 @@ module DCache #(
   input  wire                    resetIn,           // resetIn
   input  wire [1:0]              accessType,        // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
   input  wire                    readWriteIn,       // read/write select (read: 1, write: 0)
-  input  wire [31:0]             dataAddrIn,        // data address (Load/Store Buffer)
+  input  wire [31:0]             dataAddrIn,        // data address (Load & Store Buffer)
   input  wire [31:0]             dataIn,            // data to write
-  input  wire                    memDataValid,      // data valid signal (Instruction Unit)
+  input  wire                    memDataValid,      // data valid signal
   input  wire [31:BLOCK_WIDTH]   memAddr,           // memory address
   input  wire [BLOCK_SIZE*8-1:0] memDataIn,         // data to loaded from RAM
   input  wire                    acceptWrite,       // write accept signal (Cache)
@@ -22,8 +22,8 @@ module DCache #(
   output wire                    readWriteOut,      // read/write select for mem (read: 1, write: 0)
   output wire [31:BLOCK_WIDTH]   memAddrOut,        // data address
   output wire [BLOCK_SIZE*8-1:0] memOut,            // data to write
-  output wire                    dataOutValid,      // instruction output valid signal (Load/Store Buffer)
-  output wire [31:0]             dataOut,           // instruction (Load/Store Buffer)
+  output wire                    dataOutValid,      // data output valid signal (Load & Store Buffer)
+  output wire [31:0]             dataOut,           // data (Load & Store Buffer)
   output wire                    dataWriteSuc       // data write success signal (Load Store Buffer)
 );
 
