@@ -6,6 +6,7 @@ module DCache #(
 ) (
   input  wire                    clkIn,             // system clock (from CPU)
   input  wire                    resetIn,           // resetIn
+  input  wire                    clearIn,           // wrong branch prediction signal
   input  wire [1:0]              accessType,        // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
   input  wire                    readWriteIn,       // read/write select (read: 1, write: 0)
   input  wire [31:0]             dataAddrIn,        // data address (Load & Store Buffer)
@@ -87,6 +88,11 @@ always @(posedge clkIn) begin
     outRegWriteSuc  <= 0;
     readWriteOutReg <= 1;
     accessTypeReg   <= 2'b00;
+  end else if (clearIn) begin
+    accessTypeReg <= 2'b00;
+    outValidReg    <= 0;
+    outRegWriteSuc <= 0;
+    missReg        <= 0;
   end else begin
     if (memDataValid) begin
       cacheValid[memPos] <= 1;

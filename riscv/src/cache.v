@@ -6,7 +6,7 @@ module Cache #(
 ) (
   input  wire        clkIn,         // system clock (from CPU)
   input  wire        resetIn,       // resetIn (from CPU)
-  input  wire        readyIn,       // ready signal (from CPU)
+  input  wire        clearIn,       // wrong branch prediction signal
   input  wire [7:0]  memIn,         // data from RAM
   input  wire        instrInValid,  // instruction valid signal (Instruction Unit)
   input  wire [31:0] instrAddrIn,   // instruction address (Instruction Unit)
@@ -107,6 +107,7 @@ module Cache #(
   ) dcache(
     .clkIn             (clkIn),
     .resetIn           (resetIn),
+    .clearIn           (clearIn),
     .accessType        (accessType),
     .readWriteIn       (readWriteIn),
     .dataAddrIn        (dataAddrIn),
