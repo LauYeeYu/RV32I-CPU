@@ -90,19 +90,21 @@ module InstructionUnit #(
   output wire [31:0]             robAddInstrAddr, // reorder buffer add instruction address
 
   // load & Store Buffer part
-  input  wire                    lsbFull,         // load & store buffer full signal
-  input  wire                    lsbUpdate,       // load & store buffer update signal
-  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,     // load & store buffer rob index
-  input  wire [31:0]             lsbUpdateVal,    // load & store buffer value
-  output wire                    lsbAddValid,     // load & store buffer add valid signal
-  output wire                    lsbAddReadWrite, // load & store buffer read/write select
-  output wire [ROB_WIDTH-1:0]    lsbAddRobId,     // load & store buffer rob index
-  output wire                    lsbAddHasDep,    // load & store buffer has dependency
-  output wire [31:0]             lsbAddBase,      // load & store buffer add base addr
-  output wire [ROB_WIDTH-1:0]    lsbAddConstrtId, // load & store buffer add constraint index (RoB)
-  output wire [31:0]             lsbAddOffset,    // load & store buffer add offset
-  output wire [4:0]              lsbAddTarget,    // load & store buffer add target register
-  output wire [LSB_OP_WIDTH-1:0] lsbAddOp,        // load & store buffer add op
+  input  wire                    lsbFull,             // load & store buffer full signal
+  input  wire                    lsbUpdate,           // load & store buffer update signal
+  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,         // load & store buffer rob index
+  input  wire [31:0]             lsbUpdateVal,        // load & store buffer value
+  output wire                    lsbAddValid,         // load & store buffer add valid signal
+  output wire                    lsbAddReadWrite,     // load & store buffer read/write select
+  output wire [ROB_WIDTH-1:0]    lsbAddRobId,         // load & store buffer rob index
+  output wire                    lsbAddBaseHasDep,    // load & store buffer has dependency
+  output wire [31:0]             lsbAddBase,          // load & store buffer add base addr
+  output wire [ROB_WIDTH-1:0]    lsbAddBaseConstrtId, // load & store buffer add constraint index (RoB)
+  output wire [31:0]             lsbAddOffset,        // load & store buffer add offset
+  output wire                    lsbAddDataHasDep,    // load & store buffer has dependency
+  output wire [31:0]             lsbAddData,          // load & store buffer add base addr
+  output wire [ROB_WIDTH-1:0]    lsbAddDataConstrtId, // load & store buffer add constraint index (RoB)
+  output wire [LSB_OP_WIDTH-1:0] lsbAddOp,            // load & store buffer add op
 
   // Register File part
   input  wire                 rs1Dirty,      // rs1 dirty signal

@@ -62,12 +62,8 @@ module LoadStoreBuffer #(
   output wire [31:0] dataOut,      // data to write
 
   // Reorder Buffer part
-  input wire [ROB_WIDTH-1:0] robBeginId, // begin index of the load & store buffer
-  input wire                 beginValid, // has committed signal
-
-  // Register File part
-  input  wire [31:0] regValue, // register value of the destination register
-  output wire [4:0]  regIndex, // register index of the destination register
+  input wire [ROB_WIDTH-1:0] robBeginId,    // begin index of the load & store buffer
+  input wire                 robBeginValid, // has committed signal
 
   // Reservation Station part
   input  wire                    rsUpdate,    // reservation station update signal
@@ -75,16 +71,18 @@ module LoadStoreBuffer #(
   input  wire [31:0]             rsUpdateVal, // reservation station value
 
   // Instruction Unit part
-    input  wire                    addValid,     // Instruction Unit add valid signal
-    input  wire                    addReadWrite, // Instruction Unit read/write select
-    input  wire [ROB_WIDTH-1:0]    addRobId,     // Instruction Unit rob index
-    input  wire                    addHasDep,    // Instruction Unit has dependency
-    input  wire [31:0]             addBase,      // Instruction Unit add base addr
-    input  wire [ROB_WIDTH-1:0]    addConstrtId, // Instruction Unit add constraint index (RoB)
-    input  wire [31:0]             addOffset,    // Instruction Unit add offset
-    input  wire [4:0]              addTarget,    // Instruction Unit add target register
-    input  wire [LSB_OP_WIDTH-1:0] addOp,        // Instruction Unit add op
-    output wire                    full          // full signal
+  input  wire                    addValid,         // Instruction Unit add valid signal
+  input  wire                    addReadWrite,     // Instruction Unit read/write select
+  input  wire [ROB_WIDTH-1:0]    addRobId,         // Instruction Unit rob index
+  input  wire                    addBaseHasDep,    // Instruction Unit has dependency
+  input  wire [31:0]             addBase,          // Instruction Unit add base addr
+  input  wire [ROB_WIDTH-1:0]    addBaseConstrtId, // Instruction Unit add constraint index (RoB)
+  input  wire [31:0]             addOffset,        // Instruction Unit add offset
+  input  wire                    addDataHasDep,    // Instruction Unit has dependency
+  input  wire [31:0]             addData,          // Instruction Unit add data
+  input  wire [ROB_WIDTH-1:0]    addDataConstrtId, // Instruction Unit add constraint index (RoB)
+  input  wire [LSB_OP_WIDTH-1:0] addOp,            // Instruction Unit add op
+  output wire                    full              // full signal
 );
 endmodule
 ```

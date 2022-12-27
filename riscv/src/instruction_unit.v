@@ -46,19 +46,21 @@ module InstructionUnit #(
   output wire [31:0]             robAddInstrAddr, // reorder buffer add instruction address
 
   // load & Store Buffer part
-  input  wire                    lsbFull,         // load & store buffer full signal
-  input  wire                    lsbUpdate,       // load & store buffer update signal
-  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,     // load & store buffer rob index
-  input  wire [31:0]             lsbUpdateVal,    // load & store buffer value
-  output wire                    lsbAddValid,     // load & store buffer add valid signal
-  output wire                    lsbAddReadWrite, // load & store buffer read/write select
-  output wire [ROB_WIDTH-1:0]    lsbAddRobId,     // load & store buffer rob index
-  output wire                    lsbAddHasDep,    // load & store buffer has dependency
-  output wire [31:0]             lsbAddBase,      // load & store buffer add base addr
-  output wire [ROB_WIDTH-1:0]    lsbAddConstrtId, // load & store buffer add constraint index (RoB)
-  output wire [31:0]             lsbAddOffset,    // load & store buffer add offset
-  output wire [4:0]              lsbAddTarget,    // load & store buffer add target register
-  output wire [LSB_OP_WIDTH-1:0] lsbAddOp,        // load & store buffer add op
+  input  wire                    lsbFull,             // load & store buffer full signal
+  input  wire                    lsbUpdate,           // load & store buffer update signal
+  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,         // load & store buffer rob index
+  input  wire [31:0]             lsbUpdateVal,        // load & store buffer value
+  output wire                    lsbAddValid,         // load & store buffer add valid signal
+  output wire                    lsbAddReadWrite,     // load & store buffer read/write select
+  output wire [ROB_WIDTH-1:0]    lsbAddRobId,         // load & store buffer rob index
+  output wire                    lsbAddBaseHasDep,    // load & store buffer has dependency
+  output wire [31:0]             lsbAddBase,          // load & store buffer add base addr
+  output wire [ROB_WIDTH-1:0]    lsbAddBaseConstrtId, // load & store buffer add constraint index (RoB)
+  output wire [31:0]             lsbAddOffset,        // load & store buffer add offset
+  output wire                    lsbAddDataHasDep,    // load & store buffer has dependency
+  output wire [31:0]             lsbAddData,          // load & store buffer add base addr
+  output wire [ROB_WIDTH-1:0]    lsbAddDataConstrtId, // load & store buffer add constraint index (RoB)
+  output wire [LSB_OP_WIDTH-1:0] lsbAddOp,            // load & store buffer add op
 
   // Register File part
   input  wire                 rs1Dirty,      // rs1 dirty signal
@@ -107,12 +109,14 @@ reg [ROB_WIDTH-1:0]    rsAddConstrt2Reg;
 reg                     lsbAddValidReg;
 reg                     lsbAddReadWriteReg;
 reg [ROB_WIDTH-1:0]     lsbAddRobIdReg;
-reg                     lsbAddHasDepReg;
+reg                     lsbAddBaseHasDepReg;
 reg [31:0]              lsbAddBaseReg;
-reg [ROB_WIDTH-1:0]     lsbAddConstrtIdReg;
+reg [ROB_WIDTH-1:0]     lsbAddBaseConstrtIdReg;
 reg [31:0]              lsbAddOffsetReg;
+reg                     lsbAddDataHasDepReg;
+reg [31:0]              lsbAddDataReg;
+reg [ROB_WIDTH-1:0]     lsbAddDataConstrtIdReg;
 reg [LSB_OP_WIDTH-1:0]  lsbAddOpReg;
-reg [4:0]               lsbAddTargetReg;
 
 assign robRequest      = stallDependency;
 assign robAddValid     = robAddValidReg;
@@ -139,15 +143,17 @@ assign rsAddVal2     = rsAddVal2Reg;
 assign rsAddHasDep2  = rsAddHasDep2Reg;
 assign rsAddConstrt2 = rsAddConstrt2Reg;
 
-assign lsbAddValid     = lsbAddValidReg;
-assign lsbAddReadWrite = lsbAddReadWriteReg;
-assign lsbAddRobId     = lsbAddRobIdReg;
-assign lsbAddHasDep    = lsbAddHasDepReg;
-assign lsbAddBase      = lsbAddBaseReg;
-assign lsbAddConstrtId = lsbAddConstrtIdReg;
-assign lsbAddOffset    = lsbAddOffsetReg;
-assign lsbAddOp        = lsbAddOpReg;
-assign lsbAddTarget    = lsbAddTargetReg;
+assign lsbAddValid         = lsbAddValidReg;
+assign lsbAddReadWrite     = lsbAddReadWriteReg;
+assign lsbAddRobId         = lsbAddRobIdReg;
+assign lsbAddBaseHasDep    = lsbAddBaseHasDepReg;
+assign lsbAddBase          = lsbAddBaseReg;
+assign lsbAddBaseConstrtId = lsbAddBaseConstrtIdReg;
+assign lsbAddOffset        = lsbAddOffsetReg;
+assign lsbAddDataHasDep    = lsbAddDataHasDepReg;
+assign lsbAddData          = lsbAddDataReg;
+assign lsbAddDataConstrtId = lsbAddDataConstrtIdReg;
+assign lsbAddOp            = lsbAddOpReg;
 
 // Utensils for fetching instruction
 wire lsbUsed = (instrIn[6:0] == 7'b0000011) || (instrIn[6:0] == 7'b0100011);
@@ -354,19 +360,20 @@ always @(posedge clockIn) begin
           endcase
         end
         7'b0000011: begin // load
-          robAddValidReg     <= 1'b1;
-          robAddTypeReg      <= 2'b00; // Register write
-          robAddReadyReg     <= 1'b0;
-          destReg            <= rd;
-          rfUpdateValidReg   <= 1'b1;
-          rsAddValidReg      <= 1'b0;
-          lsbAddValidReg     <= 1'b1;
-          lsbAddReadWriteReg <= 1'b1; // Read
-          lsbAddRobIdReg     <= robNext;
-          lsbAddHasDepReg    <= rs1Constraint;
-          lsbAddBaseReg      <= rs1RealValue;
-          lsbAddConstrtIdReg <= rs1Dependency;
-          lsbAddOffsetReg    <= signedExtImm;
+          robAddValidReg         <= 1'b1;
+          robAddTypeReg          <= 2'b00; // Register write
+          robAddReadyReg         <= 1'b0;
+          destReg                <= rd;
+          rfUpdateValidReg       <= 1'b1;
+          rsAddValidReg          <= 1'b0;
+          lsbAddValidReg         <= 1'b1;
+          lsbAddReadWriteReg     <= 1'b1; // Read
+          lsbAddRobIdReg         <= robNext;
+          lsbAddBaseHasDepReg    <= rs1Constraint;
+          lsbAddBaseReg          <= rs1RealValue;
+          lsbAddBaseConstrtIdReg <= rs1Dependency;
+          lsbAddOffsetReg        <= signedExtImm;
+          lsbAddDataHasDepReg    <= 1'b0;
           case (op2)
             3'b000: lsbAddOpReg <= 3'b000; // Byte
             3'b001: lsbAddOpReg <= 3'b001; // Halfword
@@ -376,19 +383,21 @@ always @(posedge clockIn) begin
           endcase
         end
         7'b0100011: begin // store
-          robAddValidReg     <= 1'b1;
-          robAddTypeReg      <= 2'b10; // Memory write
-          robAddReadyReg     <= 1'b0;
-          rfUpdateValidReg   <= 1'b0;
-          rsAddValidReg      <= 1'b0;
-          lsbAddValidReg     <= 1'b1;
-          lsbAddReadWriteReg <= 1'b0; // Write
-          lsbAddRobIdReg     <= robNext;
-          lsbAddHasDepReg    <= rs1Constraint;
-          lsbAddBaseReg      <= rs1RealValue;
-          lsbAddConstrtIdReg <= rs1Dependency;
-          lsbAddOffsetReg    <= signedExtImm;
-          lsbAddTargetReg    <= rs2;
+          robAddValidReg         <= 1'b1;
+          robAddTypeReg          <= 2'b10; // Memory write
+          robAddReadyReg         <= 1'b0;
+          rfUpdateValidReg       <= 1'b0;
+          rsAddValidReg          <= 1'b0;
+          lsbAddValidReg         <= 1'b1;
+          lsbAddReadWriteReg     <= 1'b0; // Write
+          lsbAddRobIdReg         <= robNext;
+          lsbAddBaseHasDepReg    <= rs1Constraint;
+          lsbAddBaseReg          <= rs1RealValue;
+          lsbAddBaseConstrtIdReg <= rs1Dependency;
+          lsbAddOffsetReg        <= signedExtImm;
+          lsbAddDataHasDepReg    <= rs2Constraint;
+          lsbAddDataReg          <= rs2RealValue;
+          lsbAddDataConstrtIdReg <= rs2Dependency;
           case (op2)
             3'b000: lsbAddOpReg <= 3'b000; // Byte
             3'b001: lsbAddOpReg <= 3'b001; // Halfword

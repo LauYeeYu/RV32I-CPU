@@ -21,12 +21,8 @@ module LoadStoreBuffer #(
   output wire [31:0] dataOut,      // data to write
 
   // Reorder Buffer part
-  input wire [ROB_WIDTH-1:0] robBeginId, // begin index of the load & store buffer
-  input wire                 beginValid, // has committed signal
-
-  // Register File part
-  input  wire [31:0] regValue, // register value of the destination register
-  output wire [4:0]  regIndex, // register index of the destination register
+  input wire [ROB_WIDTH-1:0] robBeginId,    // begin index of the load & store buffer
+  input wire                 robBeginValid, // has committed signal
 
   // Reservation Station part
   input  wire                    rsUpdate,    // reservation station update signal
@@ -34,16 +30,18 @@ module LoadStoreBuffer #(
   input  wire [31:0]             rsUpdateVal, // reservation station value
 
   // Instruction Unit part
-    input  wire                    addValid,     // Instruction Unit add valid signal
-    input  wire                    addReadWrite, // Instruction Unit read/write select
-    input  wire [ROB_WIDTH-1:0]    addRobId,     // Instruction Unit rob index
-    input  wire                    addHasDep,    // Instruction Unit has dependency
-    input  wire [31:0]             addBase,      // Instruction Unit add base addr
-    input  wire [ROB_WIDTH-1:0]    addConstrtId, // Instruction Unit add constraint index (RoB)
-    input  wire [31:0]             addOffset,    // Instruction Unit add offset
-    input  wire [4:0]              addTarget,    // Instruction Unit add target register
-    input  wire [LSB_OP_WIDTH-1:0] addOp,        // Instruction Unit add op
-    output wire                    full          // full signal
+  input  wire                    addValid,         // Instruction Unit add valid signal
+  input  wire                    addReadWrite,     // Instruction Unit read/write select
+  input  wire [ROB_WIDTH-1:0]    addRobId,         // Instruction Unit rob index
+  input  wire                    addBaseHasDep,    // Instruction Unit has dependency
+  input  wire [31:0]             addBase,          // Instruction Unit add base addr
+  input  wire [ROB_WIDTH-1:0]    addBaseConstrtId, // Instruction Unit add constraint index (RoB)
+  input  wire [31:0]             addOffset,        // Instruction Unit add offset
+  input  wire                    addDataHasDep,    // Instruction Unit has dependency
+  input  wire [31:0]             addData,          // Instruction Unit add data
+  input  wire [ROB_WIDTH-1:0]    addDataConstrtId, // Instruction Unit add constraint index (RoB)
+  input  wire [LSB_OP_WIDTH-1:0] addOp,            // Instruction Unit add op
+  output wire                    full              // full signal
 );
 
 reg [1:0]           accessTypeReg; // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
@@ -66,45 +64,73 @@ assign lsbUpdateVal = updateValReg;
 reg [LSB_WIDTH-1:0]    beginIndex;
 reg [LSB_WIDTH-1:0]    endIndex;
 reg [LSB_SIZE-1:0]     sentToDcache;
+reg [LSB_SIZE-1:0]     ready;
 reg [LSB_SIZE-1:0]     readWrite; // 0: write, 1: read
 reg [ROB_WIDTH-1:0]    robId[LSB_SIZE-1:0];
-reg [LSB_SIZE-1:0]     hasDep;
+reg [LSB_SIZE-1:0]     baseHasDep;
 reg [31:0]             baseAddr[LSB_SIZE-1:0];
-reg [ROB_WIDTH-1:0]    constrtId[LSB_SIZE-1:0];
+reg [ROB_WIDTH-1:0]    baseConstrtId[LSB_SIZE-1:0];
 reg [31:0]             offset[LSB_SIZE-1:0];
-reg [4:0]              target[LSB_SIZE-1:0];
+reg [LSB_SIZE-1:0]     dataHasDep;
+reg [31:0]             data[LSB_SIZE-1:0];
+reg [ROB_WIDTH-1:0]    dataConstrtId[LSB_SIZE-1:0];
 reg [LSB_OP_WIDTH-1:0] op[LSB_SIZE-1:0];
-
-assign regIndex = target[beginIndex];
 
 wire [ROB_WIDTH-1:0] endIndexPlusThree = endIndex + 2'd3;
 
 assign full = (beginIndex == endIndexPlusThree);
 
 // Utensils
-wire                    topValid     = (beginIndex != endIndex);
-wire                    topSentToDc  = sentToDcache[beginIndex];
-wire                    topReadWrite = readWrite[beginIndex];
-wire [ROB_WIDTH-1:0]    topRobId     = robId[beginIndex];
-wire                    topHasDep    = hasDep[beginIndex];
-wire [31:0]             topBaseAddr  = baseAddr[beginIndex];
-wire [31:0]             topOffset    = offset[beginIndex];
-wire [31:0]             topAddr      = topBaseAddr + topOffset;
-wire [LSB_OP_WIDTH-1:0] topOp        = op[beginIndex];
+wire                    topValid      = (beginIndex != endIndex);
+wire                    topSentToDc   = sentToDcache[beginIndex];
+wire                    topReadWrite  = readWrite[beginIndex];
+wire [ROB_WIDTH-1:0]    topRobId      = robId[beginIndex];
+wire                    topReadyState = ready[beginIndex];
+wire [31:0]             topBaseAddr   = baseAddr[beginIndex];
+wire [31:0]             topOffset     = offset[beginIndex];
+wire [31:0]             topAddr       = topBaseAddr + topOffset;
+wire [31:0]             topData       = data[beginIndex];
+wire [LSB_OP_WIDTH-1:0] topOp         = op[beginIndex];
 
-wire [31:0] signedByte    = {{24{1'b0}}, regValue[31], regValue[6:0]};
-wire [31:0] signedHW      = {{16{1'b0}}, regValue[31], regValue[14:0]};
+wire [31:0] signedByte    = {{24{1'b0}}, topData[31], topData[6:0]};
+wire [31:0] signedHW      = {{16{1'b0}}, topData[31], topData[14:0]};
 wire [1:0]  topAccessType = topOp == 3'b000 ? 2'b01 : // Byte
-                                topOp == 3'b001 ? 2'b10 : // Half Word
-                                topOp == 3'b010 ? 2'b11 :
-                                topOp == 3'b011 ? 2'b01 : // Byte
-                                                  2'b10;  // Half Word;
+                            topOp == 3'b001 ? 2'b10 : // Half Word
+                            topOp == 3'b010 ? 2'b11 :
+                            topOp == 3'b011 ? 2'b01 : // Byte
+                                              2'b10;  // Half Word;
 
 wire isIoAddr = (topAddr[17:16] == 2'b11);
-wire ready = (topValid && !topHasDep) &&
-             ((isIoAddr && beginValid && (robBeginId == topRobId)) || !isIoAddr);
+wire topReady = isIoAddr     ? topReadyState :
+                topReadWrite ? baseHasDep[beginIndex] :
+                               baseHasDep[beginIndex] && dataHasDep[beginIndex];
+
+wire baseHasDepMerged = addBaseHasDep &&
+                        !((dataValid && (addBaseConstrtId == updateRobIdReg)) ||
+                          (rsUpdate && (addBaseConstrtId == rsRobIndex)));
+wire dataHasDepMerged = addDataHasDep &&
+                        !((dataValid && (addDataConstrtId == updateRobIdReg)) ||
+                          (rsUpdate && (addDataConstrtId == rsRobIndex)));
+wire [31:0] base1Merged = addBaseHasDep ?
+                          (dataValid && (addDataConstrtId == updateRobIdReg)) ? dataIn :
+                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
+                          addBase;
+wire [31:0] data1Merged = addDataHasDep ?
+                          (dataValid && (addBaseConstrtId == updateRobIdReg)) ? dataIn :
+                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
+                          addData;
 
 integer i;
+always @* begin
+  if (robBeginValid) begin
+    for (i = 0; i < LSB_SIZE; i = i + 1) begin
+      if (robId[i] == robBeginId) begin
+        ready[i] = 1'b1;
+      end
+    end
+  end
+end
+
 always @(posedge clockIn) begin
   if (resetIn) begin
     beginIndex <= {LSB_WIDTH{1'b0}};
@@ -113,9 +139,13 @@ always @(posedge clockIn) begin
     // Handle the update data from the reservation station
     if (rsUpdate) begin
       for (i = 0; i < LSB_SIZE; i = i + 1) begin
-        if (hasDep[i] && rsRobIndex == constrtId[i]) begin
-          baseAddr[i] <= rsUpdateVal;
-          hasDep[i]   <= 1'b0;
+        if (baseHasDep[i] && rsRobIndex == baseConstrtId[i]) begin
+          baseAddr[i]   <= rsUpdateVal;
+          baseHasDep[i] <= 1'b0;
+        end
+        if (dataHasDep[i] && rsRobIndex == dataConstrtId[i]) begin
+          data[i]       <= rsUpdateVal;
+          dataHasDep[i] <= 1'b0;
         end
       end
     end
@@ -123,31 +153,37 @@ always @(posedge clockIn) begin
     // Handle the update data from the DCache
     if (dataValid) begin
       for (i = 0; i < LSB_SIZE; i = i + 1) begin
-        if (hasDep[i] && updateRobIdReg == constrtId[i]) begin
-          baseAddr[i] <= dataIn;
-          hasDep[i]   <= 1'b0;
+        if (baseHasDep[i] && updateRobIdReg == baseConstrtId[i]) begin
+          baseAddr[i]   <= dataIn;
+          baseHasDep[i] <= 1'b0;
+        end
+        if (dataHasDep[i] && updateRobIdReg == dataConstrtId[i]) begin
+          data[i]       <= dataIn;
+          dataHasDep[i] <= 1'b0;
         end
       end
     end
 
     // Add new data to the buffer
     if (addValid) begin
-      sentToDcache[endIndex] <= 1'b0;
-      readWrite   [endIndex] <= addReadWrite;
-      robId       [endIndex] <= addRobId;
-      hasDep      [endIndex] <= addHasDep;
-      baseAddr    [endIndex] <= addBase;
-      constrtId   [endIndex] <= addConstrtId;
-      offset      [endIndex] <= addOffset;
-      target      [endIndex] <= addTarget;
-      op          [endIndex] <= addOp;
+      sentToDcache [endIndex] <= 1'b0;
+      readWrite    [endIndex] <= addReadWrite;
+      robId        [endIndex] <= addRobId;
+      baseHasDep   [endIndex] <= baseHasDepMerged;
+      baseAddr     [endIndex] <= base1Merged;
+      baseConstrtId[endIndex] <= addBaseConstrtId;
+      offset       [endIndex] <= addOffset;
+      dataHasDep   [endIndex] <= dataHasDepMerged;
+      data         [endIndex] <= data1Merged;
+      dataConstrtId[endIndex] <= addDataConstrtId;
+      op           [endIndex] <= addOp;
       endIndex <= endIndex + 1;
     end
 
     // Memeory access
     updateReg <= dataValid;
     updateValReg <= dataIn;
-    if (ready) begin
+    if (topValid && topReady) begin
       if (topSentToDc) begin
         accessTypeReg <= 2'b00;
         if (topReadWrite) begin // read
@@ -156,11 +192,17 @@ always @(posedge clockIn) begin
           if (dataWriteSuc) beginIndex <= beginIndex + 1;
         end
       end else begin
-        accessTypeReg            <= topAccessType;
-        readWriteReg             <= topReadWrite;
-        dataAddrReg              <= topAddr;
-        dataOutReg               <= regValue;
-        updateRobIdReg           <= topRobId;
+        case (topOp)
+          3'b000: dataOutReg <= signedByte;
+          3'b001: dataOutReg <= signedHW;
+          3'b010: dataOutReg <= topData; // Word
+          3'b011: dataOutReg <= topData;
+          3'b100: dataOutReg <= topData;
+        endcase
+        accessTypeReg  <= topAccessType;
+        readWriteReg   <= topReadWrite;
+        dataAddrReg    <= topAddr;
+        updateRobIdReg <= topRobId;
         sentToDcache[beginIndex] <= 1'b1;
       end
     end else begin
