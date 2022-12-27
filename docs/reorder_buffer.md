@@ -51,19 +51,25 @@ module ReorderBuffer #(
   output wire                 beginValid,   // has committed signal
 
   // Instruction Unit part
-  input  wire [ROB_WIDTH-1:0]    request,  // instruction unit request
-  input  wire                    addValid, // instruction unit add valid signal
-  input  wire [ROB_WIDTH-1:0]    addIndex, // instruction unit add index
-  input  wire [ROB_OP_WIDTH-1:0] addType,  // instruction unit add type signal
-  input  wire                    addReady, // instruction unit add ready signal
-  input  wire [31:0]             addValue, // instruction unit add value signal
-  input  wire                    addjump,  // instruction unit add jump signal
-  input  wire [4:0]              addDest,  // instruction unit add destination register signal
-  input  wire [31:0]             addAddr,  // instruction unit add address
-  output wire                    full,     // full signal
-  output wire [ROB_WIDTH-1:0]    next,     // next index
-  output wire                    reqReady, // ready signal
-  output wire [31:0]             reqValue, // instruction unit value
+  input  wire [ROB_WIDTH-1:0]    request,      // instruction unit request
+  input  wire                    addValid,     // instruction unit add valid signal
+  input  wire [ROB_WIDTH-1:0]    addIndex,     // instruction unit add index
+  input  wire [ROB_OP_WIDTH-1:0] addType,      // instruction unit add type signal
+  input  wire                    addReady,     // instruction unit add ready signal
+  input  wire [31:0]             addValue,     // instruction unit add value signal
+  input  wire                    addjump,      // instruction unit add jump signal
+  input  wire [4:0]              addDest,      // instruction unit add destination register signal
+  input  wire [31:0]             addAddr,      // instruction unit add address
+  input  wire [31:0]             addinstrAddr, // instruction unit add instruction address
+  output wire                    full,         // full signal
+  output wire [ROB_WIDTH-1:0]    next,         // next index
+  output wire                    reqReady,     // ready signal
+  output wire [31:0]             reqValue,     // instruction unit value
+
+  // Predictor part
+  output wire        predictUpdValid, // predictor update valid signal
+  output wire [31:0] updInstrAddr,    // instruction address
+  output wire        jumpResult,      // jump result
 
   // Register File part
   output wire                 regUpdateValid, // reorder buffer update valid signal

@@ -21,19 +21,25 @@ module ReorderBuffer #(
   output wire                 beginValid,   // has committed signal
 
   // Instruction Unit part
-  input  wire [ROB_WIDTH-1:0]    request,  // instruction unit request
-  input  wire                    addValid, // instruction unit add valid signal
-  input  wire [ROB_WIDTH-1:0]    addIndex, // instruction unit add index
-  input  wire [ROB_OP_WIDTH-1:0] addType,  // instruction unit add type signal
-  input  wire                    addReady, // instruction unit add ready signal
-  input  wire [31:0]             addValue, // instruction unit add value signal
-  input  wire                    addjump,  // instruction unit add jump signal
-  input  wire [4:0]              addDest,  // instruction unit add destination register signal
-  input  wire [31:0]             addAddr,  // instruction unit add address
-  output wire                    full,     // full signal
-  output wire [ROB_WIDTH-1:0]    next,     // next index
-  output wire                    reqReady, // ready signal
-  output wire [31:0]             reqValue, // instruction unit value
+  input  wire [ROB_WIDTH-1:0]    request,      // instruction unit request
+  input  wire                    addValid,     // instruction unit add valid signal
+  input  wire [ROB_WIDTH-1:0]    addIndex,     // instruction unit add index
+  input  wire [ROB_OP_WIDTH-1:0] addType,      // instruction unit add type signal
+  input  wire                    addReady,     // instruction unit add ready signal
+  input  wire [31:0]             addValue,     // instruction unit add value signal
+  input  wire                    addjump,      // instruction unit add jump signal
+  input  wire [4:0]              addDest,      // instruction unit add destination register signal
+  input  wire [31:0]             addAddr,      // instruction unit add address
+  input  wire [31:0]             addinstrAddr, // instruction unit add instruction address
+  output wire                    full,         // full signal
+  output wire [ROB_WIDTH-1:0]    next,         // next index
+  output wire                    reqReady,     // ready signal
+  output wire [31:0]             reqValue,     // instruction unit value
+
+  // Predictor part
+  output wire        predictUpdValid, // predictor update valid signal
+  output wire [31:0] updInstrAddr,    // instruction address
+  output wire        jumpResult,      // jump result
 
   // Register File part
   output wire                 regUpdateValid, // reorder buffer update valid signal
@@ -50,17 +56,23 @@ module ReorderBuffer #(
 
 reg                 clearReg;
 reg [31:0]          newPcReg;
+reg                 predictUpdValidReg;
+reg [31:0]          updInstrAddrReg;
+reg                 jumpResultReg;
 reg                 regUpdateValidReg;
 reg [4:0]           regUpdateDestReg;
 reg [31:0]          regValueReg;
 reg [ROB_WIDTH-1:0] regUpdateRobIdReg;
 
-assign clear          = clearReg;
-assign newPc          = newPcReg;
-assign regUpdateValid = regUpdateValidReg;
-assign regUpdateDest  = regUpdateDestReg;
-assign regValue       = regValueReg;
-assign regUpdateRobId = regUpdateRobIdReg;
+assign clear           = clearReg;
+assign newPc           = newPcReg;
+assign predictUpdValid = predictUpdValidReg;
+assign updInstrAddr    = updInstrAddrReg;
+assign jumpResult      = jumpResultReg;
+assign regUpdateValid  = regUpdateValidReg;
+assign regUpdateDest   = regUpdateDestReg;
+assign regValue        = regValueReg;
+assign regUpdateRobId  = regUpdateRobIdReg;
 
 // FIFO
 reg  [ROB_WIDTH-1:0]    beginIndex;
@@ -72,16 +84,20 @@ reg  [ROB_OP_WIDTH-1:0] type[ROB_SIZE-1:0];
 reg  [31:0]             value[ROB_SIZE-1:0];
 reg  [4:0]              destReg[ROB_SIZE-1:0];
 reg  [31:0]             missAddr[ROB_SIZE-1:0];
-wire                    topValid    = valid[beginIndex];
-wire                    topReady    = ready[beginIndex];
-wire                    topJump     = jump[beginIndex];
-wire [ROB_OP_WIDTH-1:0] topType     = type[beginIndex];
-wire [31:0]             topValue    = value[beginIndex];
-wire [4:0]              topDestReg  = destReg[beginIndex];
-wire [31:0]             topMissAddr = missAddr[beginIndex];
+reg  [31:0]             instrAddr[ROB_SIZE-1:0];
+wire                    topValid     = valid[beginIndex];
+wire                    topReady     = ready[beginIndex];
+wire                    topJump      = jump[beginIndex];
+wire [ROB_OP_WIDTH-1:0] topType      = type[beginIndex];
+wire [31:0]             topValue     = value[beginIndex];
+wire [4:0]              topDestReg   = destReg[beginIndex];
+wire [31:0]             topMissAddr  = missAddr[beginIndex];
+wire [31:0]             topInstrAddr = instrAddr[beginIndex];
+wire                    wrongBranch  = (topJump != value[0]);
 
 wire notEmpty = (beginIndex != endIndex);
 wire needUpdateReg = notEmpty && (topType == 2'b00) && topReady;
+wire nextPredictUpdValid = notEmpty && (topType == 2'b01) && topReady;
 
 wire [ROB_WIDTH-1:0] endIndexPlusThree = endIndex + 2'd3;
 wire [ROB_WIDTH-1:0] nextEndIndex = addIndex + 1'b1;
@@ -99,14 +115,15 @@ assign beginValid  = notEmpty;
 
 always @* begin
   if (addValid) begin
-    valid   [addIndex] <= 1'b1;
-    ready   [addIndex] <= addReady;
-    jump    [addIndex] <= addjump;
-    type    [addIndex] <= addType;
-    value   [addIndex] <= addValue;
-    destReg [addIndex] <= addDest;
-    missAddr[addIndex] <= addAddr;
-    endIndex           <= nextEndIndex;
+    valid    [addIndex] <= 1'b1;
+    ready    [addIndex] <= addReady;
+    jump     [addIndex] <= addjump;
+    type     [addIndex] <= addType;
+    value    [addIndex] <= addValue;
+    destReg  [addIndex] <= addDest;
+    missAddr [addIndex] <= addAddr;
+    instrAddr[addIndex] <= addinstrAddr;
+    endIndex            <= nextEndIndex;
   end
 end
 
@@ -128,16 +145,19 @@ end
 
 always @(posedge clockIn) begin
   if (resetIn) begin
-    beginIndex        <= {ROB_WIDTH{1'b0}};
-    endIndex          <= {ROB_WIDTH{1'b0}};
-    valid             <= {ROB_SIZE{1'b0}};
-    clearReg          <= 1'b0;
-    regUpdateValidReg <= 1'b0;
+    beginIndex         <= {ROB_WIDTH{1'b0}};
+    endIndex           <= {ROB_WIDTH{1'b0}};
+    valid              <= {ROB_SIZE{1'b0}};
+    clearReg           <= 1'b0;
+    regUpdateValidReg  <= 1'b0;
+    predictUpdValidReg <= 1'b0;
   end else if (clearReg) begin
-    clearReg          <= 1'b0;
-    regUpdateValidReg <= 1'b0;
+    clearReg           <= 1'b0;
+    regUpdateValidReg  <= 1'b0;
+    predictUpdValidReg <= 1'b0;
   end else if (notEmpty) begin
-    regUpdateValidReg <= needUpdateReg;
+    regUpdateValidReg  <= needUpdateReg;
+    predictUpdValidReg <= nextPredictUpdValid;
     case (topType)
       2'b00: begin // register write
         if (ready) begin
@@ -152,7 +172,9 @@ always @(posedge clockIn) begin
         if (topReady) begin
           valid[beginIndex] <= 1'b0;
           beginIndex        <= beginIndex + 1'b1;
-          if (topJump != value[0]) begin
+          updInstrAddrReg   <= topInstrAddr;
+          jumpResultReg     <= topValue[0];
+          if (wrongBranch) begin
             beginIndex <= {ROB_WIDTH{1'b0}};
             endIndex   <= {ROB_WIDTH{1'b0}};
             valid      <= {ROB_SIZE{1'b0}};
@@ -163,7 +185,8 @@ always @(posedge clockIn) begin
       end
     endcase
   end else begin
-    regUpdateValidReg <= 1'b0;
+    regUpdateValidReg  <= 1'b0;
+    predictUpdValidReg <= 1'b0;
   end
 end
 

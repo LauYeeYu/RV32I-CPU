@@ -74,19 +74,20 @@ module InstructionUnit #(
   output wire [ROB_WIDTH-1:0]    rsAddConstrt2, // reservation station add value2 constraint
 
   // Reorder Buffer part
-  input  wire                    robFull,     // reorder buffer full signal
-  input  wire [ROB_WIDTH-1:0]    robNext,     // reorder buffer next index
-  input  wire                    robReady,    // reorder buffer ready signal
-  input  wire [31:0]             robValue,    // reorder buffer value
-  output wire [ROB_WIDTH-1:0]    robRequest,  // reorder buffer request
-  output wire                    robAddValid, // reorder buffer add valid signal
-  output wire [ROB_WIDTH-1:0]    robAddIndex, // reorder buffer add index
-  output wire [ROB_OP_WIDTH-1:0] robAddType,  // reorder buffer add type signal
-  output wire                    robAddReady, // reorder buffer add ready signal
-  output wire [31:0]             robAddValue, // reorder buffer add value signal
-  output wire                    robAddjump,  // reorder buffer add jump signal
-  output wire [4:0]              robAddDest,  // reorder buffer add destination register signal
-  output wire [31:0]             robAddAddr,  // reorder buffer add address
+  input  wire                    robFull,         // reorder buffer full signal
+  input  wire [ROB_WIDTH-1:0]    robNext,         // reorder buffer next index
+  input  wire                    robReady,        // reorder buffer ready signal
+  input  wire [31:0]             robValue,        // reorder buffer value
+  output wire [ROB_WIDTH-1:0]    robRequest,      // reorder buffer request
+  output wire                    robAddValid,     // reorder buffer add valid signal
+  output wire [ROB_WIDTH-1:0]    robAddIndex,     // reorder buffer add index
+  output wire [ROB_OP_WIDTH-1:0] robAddType,      // reorder buffer add type signal
+  output wire                    robAddReady,     // reorder buffer add ready signal
+  output wire [31:0]             robAddValue,     // reorder buffer add value signal
+  output wire                    robAddjump,      // reorder buffer add jump signal
+  output wire [4:0]              robAddDest,      // reorder buffer add destination register signal
+  output wire [31:0]             robAddAddr,      // reorder buffer add address
+  output wire [31:0]             robAddInstrAddr, // reorder buffer add instruction address
 
   // load & Store Buffer part
   input  wire                    lsbFull,         // load & store buffer full signal
