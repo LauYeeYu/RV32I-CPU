@@ -42,7 +42,7 @@ reg                  outRegWriteSuc;
 reg                  readWriteOutReg;
 
 assign dataOut      = mutableAddr ? dataReg : outReg;
-assign dataOutValid = outValidReg | mutableOutValidReg;
+assign dataOutValid = outValidReg | mutableMemInValid;
 assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
 assign miss         = missReg;
 assign missAddr     = missAddrReg;
@@ -53,7 +53,6 @@ reg [1:0]  accessTypeReg;
 reg [31:0] dataAddrReg;
 reg [31:0] dataReg;
 reg        readWriteReg;
-reg        mutableOutValidReg;
 
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] dataPos     = dataAddrReg[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] nextDataPos = dataAddrReg[CACHE_WIDTH-1:BLOCK_WIDTH] + 1;
@@ -75,8 +74,7 @@ end
 
 always @* begin
   if (mutableMemInValid) begin
-    mutableOutValidReg <= 1;
-    dataReg            <= mutableMemDataIn;
+    dataReg <= mutableMemDataIn;
   end
 end
 
