@@ -39,37 +39,52 @@ to the [Register File module](register_file.md) when the data is ready.
 
 The interfaces are listed below:
 ```verilog
-module LoadStoreBuffer
-#(
-  parameter ENTRY_WIDTH = 3,
-  parameter ROB_WIDTH = 3,
-  parameter ADDR_WIDTH = 17
-)
-(
-  input  wire                  clkIn,             // system clock (from CPU)
-  input  wire                  resetIn,           // resetIn (from CPU)
-  input  wire                  readyIn,           // ready signal (from CPU)  
-  input  wire                  clearIn,           // clear signal (for wrong branch prediction)
-  input  wire                  loadStoreIn,       // read/write select (load: 1, store: 0)
-  input  wire [1:0]            accessTypeIn,      // load type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  input  wire [31:0]           baseIn,            // base address (from Instruction Unit)
-  input  wire [ROB_WIDTH-1:0]  baseConstraintIn,  // base constraint (from Instruction Unit)
-  input  wire [31:0]           offsetIn,          // offset (from Instruction Unit)
-  input  wire [31:0]           valueIn,           // value (from Instruction Unit)
-  input  wire [ROB_WIDTH-1:0]  valueConstraintIn, // value constraint (from Instruction Unit)
-  input  wire                  updateValidIn,     // update valid signal (from Reorder Buffer)
-  input  wire [ROB_WIDTH-1:0]  updateIndexIn,     // update constraint (from Reorder Buffer)
-  input  wire [31:0]           updateValueIn,     // update value (from Reorder Buffer)
-  input  wire                  dataWriteSuc,      // data write success signal (from Cache)
-  input  wire                  dataReadValidIn,   // data read valid signal (from Cache)
-  input  wire [31:0]           dataReadIn,        // data read output (from Cache)
-  output wire                  readWriteOut,      // read/write select (read: 1, write: 0)
-  output wire [1:0]            accessTypeOut,     // load type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-  output wire [ADDR_WIDTH-1:0] addrOut,           // address (to Cache)
-  output wire [31:0]           valueOut,          // value (to Cache)
-  output wire                  dataValidOut,      // data valid signal (to RoB)
-  output wire [31:0]           dataOut,           // data output (to RoB)
-  output wire [ROB_WIDTH-1:0]  dataConstraintOut, // data constraint (to RoB)
+module LoadStoreBuffer #(
+  parameter ROB_WIDTH = 4,
+  parameter LSB_WIDTH = 4,
+  parameter LSB_SIZE = 2**LSB_WIDTH,
+  parameter ROB_OP_WIDTH = 2,
+  parameter LSB_OP_WIDTH = 3
+) (
+  input  wire                 resetIn,      // resetIn
+  input  wire                 clockIn,      // clockIn
+  output wire                 lsbUpdate,    // load & store buffer update signal
+  output wire [ROB_WIDTH-1:0] lsbRobIndex,  // load & store buffer rob index
+  output wire [31:0]          lsbUpdateVal, // load & store buffer value
+
+  // DCache part
+  input  wire        dataValid,    // data input valid signal
+  input  wire [31:0] dataIn,       // data
+  input  wire        dataWriteSuc, // data write success sign
+  output wire [1:0]  accessType,   // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
+  output wire        readWriteOut, // read/write select (read: 1, write: 0)
+  output wire [31:0] dataAddr,     // data address
+  output wire [31:0] dataOut,      // data to write
+
+  // Reorder Buffer part
+  input wire [ROB_WIDTH-1:0] robBeginId, // begin index of the load & store buffer
+  input wire                 beginValid, // has committed signal
+
+  // Register File part
+  input  wire [31:0] regValue, // register value of the destination register
+  output wire [4:0]  regIndex, // register index of the destination register
+
+  // Reservation Station part
+  input  wire                    rsUpdate,    // reservation station update signal
+  input  wire [ROB_WIDTH-1:0]    rsRobIndex,  // reservation station rob index
+  input  wire [31:0]             rsUpdateVal, // reservation station value
+
+  // Instruction Unit part
+    input  wire                    addValid,     // Instruction Unit add valid signal
+    input  wire                    addReadWrite, // Instruction Unit read/write select
+    input  wire [ROB_WIDTH-1:0]    addRobId,     // Instruction Unit rob index
+    input  wire                    addHasDep,    // Instruction Unit has dependency
+    input  wire [31:0]             addBase,      // Instruction Unit add base addr
+    input  wire [ROB_WIDTH-1:0]    addConstrtId, // Instruction Unit add constraint index (RoB)
+    input  wire [31:0]             addOffset,    // Instruction Unit add offset
+    input  wire [4:0]              addTarget,    // Instruction Unit add target register
+    input  wire [LSB_OP_WIDTH-1:0] addOp,        // Instruction Unit add op
+    output wire                    full          // full signal
 );
 endmodule
 ```
@@ -91,5 +106,5 @@ If the `dataReadValidIn` signal is high, the Load & Store Buffer module
 will update the corresponding entry.
 
 For the data that will be read or written, the Load & Store Buffer module
-will read data from the [Cache module](cache.md) or put the data to
-[Cache module](cache.md).
+will read data from the [DCache module](cache.md#data-cache) or put the
+data to [DCache module](cache.md#data-cache).
