@@ -120,6 +120,16 @@ always @(posedge clockIn) begin
       end
     end
 
+    // Handle the update data from the DCache
+    if (dataValid) begin
+      for (i = 0; i < LSB_SIZE; i = i + 1) begin
+        if (hasDep[i] && updateRobIdReg == constrtId[i]) begin
+          baseAddr[i] <= dataIn;
+          hasDep[i]   <= 1'b0;
+        end
+      end
+    end
+
     // Add new data to the buffer
     if (addValid) begin
       sentToDcache[endIndex] <= 1'b0;
