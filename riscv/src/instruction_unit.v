@@ -7,6 +7,7 @@ module InstructionUnit #(
 ) (
   input  wire        resetIn,      // resetIn
   input  wire        clockIn,      // clockIn
+  input  wire        readyIn,      // readyIn
   input  wire        clearIn,      // clear signal (when branch prediction is wrong)
   input  wire [31:0] newPc,        // the correct PC value
   input  wire        instrInValid, // instruction valid signal (icache)
@@ -192,7 +193,7 @@ always @(posedge clockIn) begin
     rsAddValidReg    <= 1'b0;
     rfUpdateValidReg <= 1'b0;
     lsbAddValidReg   <= 1'b0;
-  end else begin
+  end else if (readyIn) begin
     if (stall) begin
       if (robReady) begin
         stall         <= 1'b0;

@@ -51,6 +51,7 @@ module InstructionUnit #(
 ) (
   input  wire        resetIn,      // resetIn
   input  wire        clockIn,      // clockIn
+  input  wire        readyIn,      // readyIn
   input  wire        clearIn,      // clear signal (when branch prediction is wrong)
   input  wire [31:0] newPc,        // the correct PC value
   input  wire        instrInValid, // instruction valid signal (icache)
