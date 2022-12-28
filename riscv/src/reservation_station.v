@@ -1,5 +1,5 @@
 module ReservationStation #(
-  parameter RS_OP_WITDTH = 4,
+  parameter RS_OP_WIDTH = 4,
   parameter RS_WIDTH = 4,
   parameter ROB_WIDTH = 4
 ) (
@@ -7,24 +7,24 @@ module ReservationStation #(
   input  wire clockIn,   // clock signal
 
   // Instruction Unit part
-  input  wire                    addValid,    // add valid signal
-  input  wire [RS_OP_WITDTH-1:0] addOp,       // add op
-  input  wire [ROB_WIDTH-1:0]    addRobIndex, // add rob index
-  input  wire [31:0]             addVal1,     // add value1
-  input  wire                    addHasDep1,  // add value1 dependency
-  input  wire [ROB_WIDTH-1:0]    addConstrt1, // add value1 constraint
-  input  wire [31:0]             addVal2,     // add value2
-  input  wire                    addHasDep2,  // add value2 dependency
-  input  wire [ROB_WIDTH-1:0]    addConstrt2, // add value2 constraint
-  output wire                    full,        // full signal
-  output wire                    update,      // update signal
-  output wire [ROB_WIDTH-1:0]    updateRobId, // rob index
-  output wire [31:0]             updateVal,   // value
+  input  wire                   addValid,    // add valid signal
+  input  wire [RS_OP_WIDTH-1:0] addOp,       // add op
+  input  wire [ROB_WIDTH-1:0]   addRobIndex, // add rob index
+  input  wire [31:0]            addVal1,     // add value1
+  input  wire                   addHasDep1,  // add value1 dependency
+  input  wire [ROB_WIDTH-1:0]   addConstrt1, // add value1 constraint
+  input  wire [31:0]            addVal2,     // add value2
+  input  wire                   addHasDep2,  // add value2 dependency
+  input  wire [ROB_WIDTH-1:0]   addConstrt2, // add value2 constraint
+  output wire                   full,        // full signal
+  output wire                   update,      // update signal
+  output wire [ROB_WIDTH-1:0]   updateRobId, // rob index
+  output wire [31:0]            updateVal,   // value
 
   // Load & Store Buffer part
-  input  wire                    lsbUpdate,    // load & store buffer update signal
-  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,  // load & store buffer rob index
-  input  wire [31:0]             lsbUpdateVal  // load & store buffer value
+  input  wire                 lsbUpdate,    // load & store buffer update signal
+  input  wire [ROB_WIDTH-1:0] lsbRobIndex,  // load & store buffer rob index
+  input  wire [31:0]          lsbUpdateVal  // load & store buffer value
 );
 
 parameter SUPPORTED_OPS = 12;
@@ -43,27 +43,27 @@ parameter LT  = 4'b1010;
 parameter LTU = 4'b1011;
 
 // ALU section
-reg                     calculating;
-reg  [31:0]             v1Cal;
-reg  [31:0]             v2Cal;
-reg  [ROB_WIDTH-1:0]    robIdCal;
-reg  [RS_WIDTH-1:0]     rsIdCal;
-reg  [RS_OP_WITDTH-1:0] opCal;
-wire [31:0]             AluResult[SUPPORTED_OPS-1:0];
-wire [31:0]             resultCal = AluResult[opCal];
+reg                    calculating;
+reg  [31:0]            v1Cal;
+reg  [31:0]            v2Cal;
+reg  [ROB_WIDTH-1:0]   robIdCal;
+reg  [RS_WIDTH-1:0]    rsIdCal;
+reg  [RS_OP_WIDTH-1:0] opCal;
+wire [31:0]            aluResult[SUPPORTED_OPS-1:0];
+wire [31:0]            resultCal = aluResult[opCal];
 
-assign AluResult[ADD] = v1Cal + v2Cal;
-assign AluResult[SUB] = v1Cal - v2Cal;
-assign AluResult[XOR] = v1Cal ^ v2Cal;
-assign AluResult[OR]  = v1Cal | v2Cal;
-assign AluResult[AND] = v1Cal & v2Cal;
-assign AluResult[SLL] = v1Cal << v2Cal;
-assign AluResult[SRL] = v1Cal >> v2Cal;
-assign AluResult[SRA] = v1Cal >>> v2Cal;
-assign AluResult[EQ]  = v1Cal  == v2Cal ? 32'b1 : 32'b0;
-assign AluResult[NE]  = v1Cal  != v2Cal ? 32'b1 : 32'b0;
-assign AluResult[LT]  = $signed(v1Cal) < $signed(v2Cal) ? 32'b1 : 32'b0;
-assign AluResult[LTU] = v1Cal < v2Cal ? 32'b1 : 32'b0;
+assign aluResult[ADD] = v1Cal + v2Cal;
+assign aluResult[SUB] = v1Cal - v2Cal;
+assign aluResult[XOR] = v1Cal ^ v2Cal;
+assign aluResult[OR]  = v1Cal | v2Cal;
+assign aluResult[AND] = v1Cal & v2Cal;
+assign aluResult[SLL] = v1Cal << v2Cal;
+assign aluResult[SRL] = v1Cal >> v2Cal;
+assign aluResult[SRA] = v1Cal >>> v2Cal;
+assign aluResult[EQ]  = v1Cal  == v2Cal ? 32'b1 : 32'b0;
+assign aluResult[NE]  = v1Cal  != v2Cal ? 32'b1 : 32'b0;
+assign aluResult[LT]  = $signed(v1Cal) < $signed(v2Cal) ? 32'b1 : 32'b0;
+assign aluResult[LTU] = v1Cal < v2Cal ? 32'b1 : 32'b0;
 
 // Reservation Station section
 reg                 updateValidReg;
@@ -75,17 +75,17 @@ assign updateRobId = updateRobIndexReg;
 assign updateVal   = updateValReg;
 
 // internal data
-reg  [RS_WIDTH-1:0]     occupied;
-reg  [2**RS_WIDTH-1:0]  valid;
-reg  [ROB_WIDTH-1:0]    robIndex [2**RS_WIDTH-1:0];
-reg  [31:0]             value1   [2**RS_WIDTH-1:0];
-reg  [2**RS_WIDTH-1:0]  hasDep1;
-reg  [ROB_WIDTH-1:0]    constrt1 [2**RS_WIDTH-1:0];
-reg  [31:0]             value2   [2**RS_WIDTH-1:0];
-reg  [2**RS_WIDTH-1:0]  hasDep2;
-reg  [ROB_WIDTH-1:0]    constrt2 [2**RS_WIDTH-1:0];
-reg  [RS_OP_WITDTH-1:0] op       [2**RS_WIDTH-1:0];
-wire [2**RS_WIDTH-1:0]  ready = ~hasDep1 & ~hasDep2;
+reg  [RS_WIDTH-1:0]    occupied;
+reg  [2**RS_WIDTH-1:0] valid;
+reg  [ROB_WIDTH-1:0]   robIndex [2**RS_WIDTH-1:0];
+reg  [31:0]            value1   [2**RS_WIDTH-1:0];
+reg  [2**RS_WIDTH-1:0] hasDep1;
+reg  [ROB_WIDTH-1:0]   constrt1 [2**RS_WIDTH-1:0];
+reg  [31:0]            value2   [2**RS_WIDTH-1:0];
+reg  [2**RS_WIDTH-1:0] hasDep2;
+reg  [ROB_WIDTH-1:0]   constrt2 [2**RS_WIDTH-1:0];
+reg  [RS_OP_WIDTH-1:0] op       [2**RS_WIDTH-1:0];
+wire [2**RS_WIDTH-1:0] ready = ~hasDep1 & ~hasDep2;
 
 wire hasDep1Merged = addHasDep1 &&
                      !((lsbUpdate   && (addConstrt1 == lsbRobIndex)) ||
