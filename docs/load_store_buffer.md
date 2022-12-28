@@ -43,7 +43,6 @@ module LoadStoreBuffer #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
   parameter LSB_SIZE = 2**LSB_WIDTH,
-  parameter ROB_OP_WIDTH = 2,
   parameter LSB_OP_WIDTH = 3
 ) (
   input  wire                 resetIn,      // resetIn
