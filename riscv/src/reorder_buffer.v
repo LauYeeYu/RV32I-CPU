@@ -27,10 +27,10 @@ module ReorderBuffer #(
   input  wire [ROB_OP_WIDTH-1:0] addType,      // instruction unit add type signal
   input  wire                    addReady,     // instruction unit add ready signal
   input  wire [31:0]             addValue,     // instruction unit add value signal
-  input  wire                    addjump,      // instruction unit add jump signal
+  input  wire                    addJump,      // instruction unit add jump signal
   input  wire [4:0]              addDest,      // instruction unit add destination register signal
   input  wire [31:0]             addAddr,      // instruction unit add address
-  input  wire [31:0]             addinstrAddr, // instruction unit add instruction address
+  input  wire [31:0]             addInstrAddr, // instruction unit add instruction address
   output wire                    full,         // full signal
   output wire [ROB_WIDTH-1:0]    next,         // next index
   output wire                    reqReady,     // ready signal
@@ -117,12 +117,12 @@ always @* begin
   if (addValid) begin
     valid    [addIndex] <= 1'b1;
     ready    [addIndex] <= addReady;
-    jump     [addIndex] <= addjump;
+    jump     [addIndex] <= addJump;
     type     [addIndex] <= addType;
     value    [addIndex] <= addValue;
     destReg  [addIndex] <= addDest;
     missAddr [addIndex] <= addAddr;
-    instrAddr[addIndex] <= addinstrAddr;
+    instrAddr[addIndex] <= addInstrAddr;
     endIndex            <= nextEndIndex;
   end
 end

@@ -86,7 +86,7 @@ module InstructionUnit #(
   output wire [ROB_OP_WIDTH-1:0] robAddType,      // reorder buffer add type signal
   output wire                    robAddReady,     // reorder buffer add ready signal
   output wire [31:0]             robAddValue,     // reorder buffer add value signal
-  output wire                    robAddjump,      // reorder buffer add jump signal
+  output wire                    robAddJump,      // reorder buffer add jump signal
   output wire [4:0]              robAddDest,      // reorder buffer add destination register signal
   output wire [31:0]             robAddAddr,      // reorder buffer add address
   output wire [31:0]             robAddInstrAddr, // reorder buffer add instruction address
