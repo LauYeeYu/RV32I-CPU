@@ -1,7 +1,7 @@
 module InstructionUnit #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
-  parameter RS_OP_WITDTH = 4,
+  parameter RS_OP_WIDTH = 4,
   parameter ROB_OP_WIDTH = 2,
   parameter LSB_OP_WIDTH = 3
 ) (
@@ -15,19 +15,19 @@ module InstructionUnit #(
   input  wire [31:0] instrAddr,    // instruction address (icache)
 
   // Reservation Station part
-  input  wire                    rsFull,        // reservation station full signal
-  input  wire                    rsUpdate,      // reservation station update signal
-  input  wire [ROB_WIDTH-1:0]    rsRobIndex,    // reservation station rob index
-  input  wire [31:0]             rsUpdateVal,   // reservation station value
-  output wire                    rsAddValid,    // reservation station add valid signal
-  output wire [RS_OP_WITDTH-1:0] rsAddOp,       // reservation station add op
-  output wire [ROB_WIDTH-1:0]    rsAddRobIndex, // reservation station add rob index
-  output wire [31:0]             rsAddVal1,     // reservation station add value1
-  output wire                    rsAddHasDep1,  // reservation station add value1 dependency
-  output wire [ROB_WIDTH-1:0]    rsAddConstrt1, // reservation station add value1 constraint
-  output wire [31:0]             rsAddVal2,     // reservation station add value2
-  output wire                    rsAddHasDep2,  // reservation station add value2 dependency
-  output wire [ROB_WIDTH-1:0]    rsAddConstrt2, // reservation station add value2 constraint
+  input  wire                   rsFull,        // reservation station full signal
+  input  wire                   rsUpdate,      // reservation station update signal
+  input  wire [ROB_WIDTH-1:0]   rsUpdateRobId, // reservation station rob index
+  input  wire [31:0]            rsUpdateVal,   // reservation station value
+  output wire                   rsAddValid,    // reservation station add valid signal
+  output wire [RS_OP_WIDTH-1:0] rsAddOp,       // reservation station add op
+  output wire [ROB_WIDTH-1:0]   rsAddRobIndex, // reservation station add rob index
+  output wire [31:0]            rsAddVal1,     // reservation station add value1
+  output wire                   rsAddHasDep1,  // reservation station add value1 dependency
+  output wire [ROB_WIDTH-1:0]   rsAddConstrt1, // reservation station add value1 constraint
+  output wire [31:0]            rsAddVal2,     // reservation station add value2
+  output wire                   rsAddHasDep2,  // reservation station add value2 dependency
+  output wire [ROB_WIDTH-1:0]   rsAddConstrt2, // reservation station add value2 constraint
 
   // Reorder Buffer part
   input  wire                    robFull,         // reorder buffer full signal
@@ -48,7 +48,7 @@ module InstructionUnit #(
   // load & Store Buffer part
   input  wire                    lsbFull,             // load & store buffer full signal
   input  wire                    lsbUpdate,           // load & store buffer update signal
-  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,         // load & store buffer rob index
+  input  wire [ROB_WIDTH-1:0]    lsbUpdateRobId,         // load & store buffer rob index
   input  wire [31:0]             lsbUpdateVal,        // load & store buffer value
   output wire                    lsbAddValid,         // load & store buffer add valid signal
   output wire                    lsbAddReadWrite,     // load & store buffer read/write select
@@ -96,15 +96,15 @@ reg                    jumpReg;
 reg [4:0]              destReg;
 reg                    rfUpdateValidReg;
 
-reg                    rsAddValidReg;
-reg [RS_OP_WITDTH-1:0] rsAddOpReg;
-reg [ROB_WIDTH-1:0]    rsAddRobIndexReg;
-reg [31:0]             rsAddVal1Reg;
-reg                    rsAddHasDep1Reg;
-reg [ROB_WIDTH-1:0]    rsAddConstrt1Reg;
-reg [31:0]             rsAddVal2Reg;
-reg                    rsAddHasDep2Reg;
-reg [ROB_WIDTH-1:0]    rsAddConstrt2Reg;
+reg                   rsAddValidReg;
+reg [RS_OP_WIDTH-1:0] rsAddOpReg;
+reg [ROB_WIDTH-1:0]   rsAddRobIndexReg;
+reg [31:0]            rsAddVal1Reg;
+reg                   rsAddHasDep1Reg;
+reg [ROB_WIDTH-1:0]   rsAddConstrt1Reg;
+reg [31:0]            rsAddVal2Reg;
+reg                   rsAddHasDep2Reg;
+reg [ROB_WIDTH-1:0]   rsAddConstrt2Reg;
 
 reg                     lsbAddValidReg;
 reg                     lsbAddReadWriteReg;
@@ -177,18 +177,18 @@ wire [31:0] storeDiff     = {{20{instrReg[31]}}, instrReg[31:25], instrReg[11:7]
 wire [31:0] shiftAmount   = {27'b0, instrReg[24:20]};
 wire        regUpdate     = rd != 5'b00000;
 wire        rs1Constraint = rs1Dirty &&
-                            !((rsUpdate  && (rs1Dependency == rsRobIndex)) ||
-                              (lsbUpdate && (rs1Dependency == lsbRobIndex)));
+                            !((rsUpdate  && (rs1Dependency == rsUpdateRobId)) ||
+                              (lsbUpdate && (rs1Dependency == lsbUpdateRobId)));
 wire [31:0] rs1RealValue  = rs1Dirty ?
-                              (rsUpdate  && (rs1Dependency == rsRobIndex)) ? rsUpdateVal :
-                              (lsbUpdate && (rs1Dependency == lsbRobIndex)) ? lsbUpdateVal : 0 :
+                              (rsUpdate  && (rs1Dependency == rsUpdateRobId)) ? rsUpdateVal :
+                              (lsbUpdate && (rs1Dependency == lsbUpdateRobId)) ? lsbUpdateVal : 0 :
                             rs1Value;
 wire       rs2Constraint = rs2Dirty &&
-                            !((rsUpdate  && (rs2Dependency == rsRobIndex)) ||
-                              (lsbUpdate && (rs2Dependency == lsbRobIndex)));
+                            !((rsUpdate  && (rs2Dependency == rsUpdateRobId)) ||
+                              (lsbUpdate && (rs2Dependency == lsbUpdateRobId)));
 wire [31:0] rs2RealValue = rs2Dirty ?
-                              (rsUpdate  && (rs2Dependency == rsRobIndex)) ? rsUpdateVal :
-                              (lsbUpdate && (rs2Dependency == lsbRobIndex)) ? lsbUpdateVal : 0 :
+                              (rsUpdate  && (rs2Dependency == rsUpdateRobId)) ? rsUpdateVal :
+                              (lsbUpdate && (rs2Dependency == lsbUpdateRobId)) ? lsbUpdateVal : 0 :
                             rs2Value;
 
 always @(posedge clockIn) begin

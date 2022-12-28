@@ -1,10 +1,9 @@
-module predictor #(
+module Predictor #(
   parameter LOCAL_WIDTH = 12,
   parameter LOCAL_SIZE = 2**LOCAL_WIDTH
 ) (
   input  wire        resetIn,       // resetIn
   input  wire        clockIn,       // clockIn
-  input  wire        instrInValid,  // instruction valid signal (icache)
   input  wire [31:0] instrAddr,     // instruction address (icache)
   input  wire        updateValid,   // update valid signal (Reorder Buffer)
   input  wire [31:0] updateInstr,   // instruction (Reorder Buffer)

@@ -45,7 +45,7 @@ The interfaces are listed below:
 module InstructionUnit #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
-  parameter RS_OP_WITDTH = 4,
+  parameter RS_OP_WIDTH = 4,
   parameter ROB_OP_WIDTH = 2,
   parameter LSB_OP_WIDTH = 3
 ) (
@@ -59,19 +59,19 @@ module InstructionUnit #(
   input  wire [31:0] instrAddr,    // instruction address (icache)
 
   // Reservation Station part
-  input  wire                    rsFull,        // reservation station full signal
-  input  wire                    rsUpdate,      // reservation station update signal
-  input  wire [ROB_WIDTH-1:0]    rsRobIndex,    // reservation station rob index
-  input  wire [31:0]             rsUpdateVal,   // reservation station value
-  output wire                    rsAddValid,    // reservation station add valid signal
-  output wire [RS_OP_WITDTH-1:0] rsAddOp,       // reservation station add op
-  output wire [ROB_WIDTH-1:0]    rsAddRobIndex, // reservation station add rob index
-  output wire [31:0]             rsAddVal1,     // reservation station add value1
-  output wire                    rsAddHasDep1,  // reservation station add value1 dependency
-  output wire [ROB_WIDTH-1:0]    rsAddConstrt1, // reservation station add value1 constraint
-  output wire [31:0]             rsAddVal2,     // reservation station add value2
-  output wire                    rsAddHasDep2,  // reservation station add value2 dependency
-  output wire [ROB_WIDTH-1:0]    rsAddConstrt2, // reservation station add value2 constraint
+  input  wire                   rsFull,        // reservation station full signal
+  input  wire                   rsUpdate,      // reservation station update signal
+  input  wire [ROB_WIDTH-1:0]   rsUpdateRobId, // reservation station rob index
+  input  wire [31:0]            rsUpdateVal,   // reservation station value
+  output wire                   rsAddValid,    // reservation station add valid signal
+  output wire [RS_OP_WIDTH-1:0] rsAddOp,       // reservation station add op
+  output wire [ROB_WIDTH-1:0]   rsAddRobIndex, // reservation station add rob index
+  output wire [31:0]            rsAddVal1,     // reservation station add value1
+  output wire                   rsAddHasDep1,  // reservation station add value1 dependency
+  output wire [ROB_WIDTH-1:0]   rsAddConstrt1, // reservation station add value1 constraint
+  output wire [31:0]            rsAddVal2,     // reservation station add value2
+  output wire                   rsAddHasDep2,  // reservation station add value2 dependency
+  output wire [ROB_WIDTH-1:0]   rsAddConstrt2, // reservation station add value2 constraint
 
   // Reorder Buffer part
   input  wire                    robFull,         // reorder buffer full signal
@@ -92,7 +92,7 @@ module InstructionUnit #(
   // load & Store Buffer part
   input  wire                    lsbFull,             // load & store buffer full signal
   input  wire                    lsbUpdate,           // load & store buffer update signal
-  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,         // load & store buffer rob index
+  input  wire [ROB_WIDTH-1:0]    lsbUpdateRobId,         // load & store buffer rob index
   input  wire [31:0]             lsbUpdateVal,        // load & store buffer value
   output wire                    lsbAddValid,         // load & store buffer add valid signal
   output wire                    lsbAddReadWrite,     // load & store buffer read/write select
