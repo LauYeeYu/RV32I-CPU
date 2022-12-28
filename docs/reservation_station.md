@@ -45,28 +45,28 @@ parameter RS_OP_WITDTH = 4,
 parameter RS_WIDTH = 4,
 parameter ROB_WIDTH = 4
 ) (
-input  wire resetIn,   // reset signal
-input  wire clockIn,   // clock signal
-
-// Instruction Unit part
-input  wire                    addValid,    // add valid signal
-input  wire [RS_OP_WITDTH-1:0] addOp,       // add op
-input  wire [ROB_WIDTH-1:0]    addRobIndex, // add rob index
-input  wire [31:0]             addVal1,     // add value1
-input  wire                    addHasDep1,  // add value1 dependency
-input  wire [ROB_WIDTH-1:0]    addConstrt1, // add value1 constraint
-input  wire [31:0]             addVal2,     // add value2
-input  wire                    addHasDep2,  // add value2 dependency
-input  wire [ROB_WIDTH-1:0]    addConstrt2, // add value2 constraint
-output wire                    full,        // full signal
-output wire                    update,      // update signal
-output wire [ROB_WIDTH-1:0]    updateRobId, // rob index
-output wire [31:0]             updateVal,   // value
-
-// Load & Store Buffer part
-input  wire                    lsbUpdate,    // load & store buffer update signal
-input  wire [ROB_WIDTH-1:0]    lsbRobIndex,  // load & store buffer rob index
-input  wire [31:0]             lsbUpdateVal  // load & store buffer value
+  input  wire resetIn,   // reset signal
+  input  wire clockIn,   // clock signal
+  
+  // Instruction Unit part
+  input  wire                    addValid,    // add valid signal
+  input  wire [RS_OP_WITDTH-1:0] addOp,       // add op
+  input  wire [ROB_WIDTH-1:0]    addRobIndex, // add rob index
+  input  wire [31:0]             addVal1,     // add value1
+  input  wire                    addHasDep1,  // add value1 dependency
+  input  wire [ROB_WIDTH-1:0]    addConstrt1, // add value1 constraint
+  input  wire [31:0]             addVal2,     // add value2
+  input  wire                    addHasDep2,  // add value2 dependency
+  input  wire [ROB_WIDTH-1:0]    addConstrt2, // add value2 constraint
+  output wire                    full,        // full signal
+  output wire                    update,      // update signal
+  output wire [ROB_WIDTH-1:0]    updateRobId, // rob index
+  output wire [31:0]             updateVal,   // value
+  
+  // Load & Store Buffer part
+  input  wire                    lsbUpdate,    // load & store buffer update signal
+  input  wire [ROB_WIDTH-1:0]    lsbRobIndex,  // load & store buffer rob index
+  input  wire [31:0]             lsbUpdateVal  // load & store buffer value
 );
 endmodule
 ```
