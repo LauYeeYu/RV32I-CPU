@@ -17,7 +17,7 @@ reg [LOCAL_WIDTH-1:0] instrPos;
 
 wire [LOCAL_WIDTH-1:0] updatePos = updateInstr[LOCAL_WIDTH+1:2];
 
-assign jump = localHistory[instrPos] > 2'b01 ? 1'b1 : 1'b0;
+assign jump = localHistory[instrPos][1];
 
 integer i;
 
