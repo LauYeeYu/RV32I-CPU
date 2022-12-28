@@ -6,7 +6,6 @@ module ICache #(
 ) (
   input  wire                    clkIn,         // system clock (from CPU)
   input  wire                    resetIn,       // resetIn
-  input  wire                    instrInValid,  // instruction valid signal (Instruction Unit)
   input  wire [31:0]             instrAddrIn,   // instruction address (Instruction Unit)
   input  wire                    memDataValid,  // data valid signal (Instruction Unit)
   input  wire [31:BLOCK_WIDTH]   memAddr,       // memory address
@@ -24,7 +23,7 @@ reg [31:0]                       cacheData[CACHE_SIZE-1:0][3:0];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] instrPos = instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:BLOCK_WIDTH] memPos   = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
 wire [BLOCK_WIDTH-3:0]           blockPos = instrAddrIn[BLOCK_WIDTH-1:2];
-wire hit = instrInValid && cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_WIDTH]);
+wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_WIDTH]);
 
 assign miss          = ~hit;
 assign instrOutValid = hit;
