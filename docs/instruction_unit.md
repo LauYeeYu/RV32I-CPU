@@ -54,9 +54,11 @@ module InstructionUnit #(
   input  wire        readyIn,      // readyIn
   input  wire        clearIn,      // clear signal (when branch prediction is wrong)
   input  wire [31:0] newPc,        // the correct PC value
+
+  // Cache part
   input  wire        instrInValid, // instruction valid signal (icache)
   input  wire [31:0] instrIn,      // data valid signal (icache)
-  input  wire [31:0] instrAddr,    // instruction address (icache)
+  output wire [31:0] instrAddrOut, // instruction address (icache)
 
   // Reservation Station part
   input  wire                   rsFull,        // reservation station full signal
