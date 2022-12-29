@@ -13,7 +13,7 @@ module Cache #(
   input  wire        readWriteIn,   // read/write select (read: 1, write: 0)
   input  wire [31:0] dataAddrIn,    // data address (from Load Store Buffer)
   input  wire [31:0] dataIn,        // data to write (from Load Store Buffer)
-  output wire        readWriteOut,  // read/write select (read: 1, write: 0)
+  output wire        readWriteOut,  // read/write select (read: 0, write: 1)
   output wire [31:0] memAddr,       // memory address
   output wire [7:0]  memOut,        // write data to RAM
   output wire        instrOutValid, // instruction output valid signal (Instruction Unit)
@@ -24,7 +24,7 @@ module Cache #(
 );
 
   // Mem regs
-  reg        memReadWrite = 1'b1;
+  reg        memReadWrite;
   reg [7:0]  memOutReg;
   reg [31:0] memAddrReg;
 
@@ -52,6 +52,7 @@ module Cache #(
 
   // Buffer
   reg                    loading;
+  reg                    waitingForMemRead;
   reg                    resultReady;
   reg                    readWrite; // 1: read, 0: write
   reg                    idle;
@@ -127,20 +128,24 @@ module Cache #(
     .dataWriteSuc      (dataWriteSuc)
   );
 
-  assign readWriteOut = memReadWrite;
+  assign readWriteOut = ~memReadWrite;
   assign memOut       = memOutReg;
   assign memAddr      = memAddrReg;
 
   // ICache and DCache control logic
   always @(posedge clkIn) begin
     if (resetIn) begin
-      loading       <= 0;
-      resultReady   <= 0;
-      readWrite     <= 1;
-      idle          <= 1;
-      progress      <= 0;
-      mutableReady  <= 0;
-      accessTypeReg <= 2'b00;
+      loading           <= 0;
+      resultReady       <= 0;
+      readWrite         <= 1;
+      idle              <= 1;
+      progress          <= 0;
+      mutableReady      <= 0;
+      memReadWrite      <= 1;
+      waitingForMemRead <= 0;
+      accessTypeReg     <= 2'b00;
+    end else if (waitingForMemRead) begin
+      waitingForMemRead <= 0;
     end else begin
       // If the memory has already been loaded
       if (resultReady) begin
@@ -389,6 +394,7 @@ module Cache #(
         end
       endcase
       end else if (mutableAddr && !mutableReady) begin
+        waitingForMemRead <= readWriteReg;
         case (accessTypeReg)
           2'b01: begin // Byte
             mutableReady <= 1;
@@ -405,11 +411,12 @@ module Cache #(
           end
         endcase
       end else if (dcacheMiss) begin // dcache have the priority to use memory
-        readWrite      <= dcacheReadWriteOut;
-        fromICache     <= 0;
-        loading        <= 1;
-        progress       <= 0;
-        acceptWriteReg <= ~dcacheReadWriteOut;
+        readWrite         <= dcacheReadWriteOut;
+        fromICache        <= 0;
+        loading           <= 1;
+        progress          <= 0;
+        waitingForMemRead <= dcacheReadWriteOut;
+        acceptWriteReg    <= ~dcacheReadWriteOut;
         if (dcacheReadWriteOut) begin // read
           tag        <= dcacheMissAddr;
           memAddrReg <= {tag, 4'b0000};
@@ -417,13 +424,14 @@ module Cache #(
           buffer <= dcacheMemDataOut;
         end
       end else if (icacheMiss) begin
-        acceptWriteReg <= 0;
-        readWrite      <= 1; // read
-        fromICache     <= 1;
-        loading        <= 1;
-        progress       <= 0;
-        tag            <= instrAddrIn[31:BLOCK_WIDTH];
-        memAddrReg     <= {instrAddrIn[31:BLOCK_WIDTH], 4'b0000};
+        acceptWriteReg    <= 0;
+        readWrite         <= 1; // read
+        fromICache        <= 1;
+        loading           <= 1;
+        progress          <= 0;
+        waitingForMemRead <= 1;
+        tag               <= instrAddrIn[31:BLOCK_WIDTH];
+        memAddrReg        <= {instrAddrIn[31:BLOCK_WIDTH], 4'b0000};
       end else begin
         acceptWriteReg <= 0;
       end
