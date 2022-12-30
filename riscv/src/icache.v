@@ -30,17 +30,18 @@ assign instrOutValid = hit;
 assign instrOut      = cacheData[instrPos][blockPos];
 
 always @(posedge clkIn) begin
-  if (resetIn) begin
-    cacheValid       <= {CACHE_SIZE{1'b0}};
-  end else begin
-    if (memDataValid) begin
-      cacheValid[memPos]    <= 1'b1;
-      cacheTag  [memPos]    <= memAddr[31:CACHE_WIDTH];
-      cacheData [memPos][0] <= memDataIn[31:0];
-      cacheData [memPos][1] <= memDataIn[63:32];
-      cacheData [memPos][2] <= memDataIn[95:64];
-      cacheData [memPos][3] <= memDataIn[127:96];
-    end
+  if (resetIn) cacheValid <= {CACHE_SIZE{1'b0}};
+end
+
+always @* begin
+  if (memDataValid) begin
+    cacheValid[memPos]    <= 1'b1;
+    cacheTag  [memPos]    <= memAddr[31:CACHE_WIDTH];
+    cacheData [memPos][0] <= memDataIn[31:0];
+    cacheData [memPos][1] <= memDataIn[63:32];
+    cacheData [memPos][2] <= memDataIn[95:64];
+    cacheData [memPos][3] <= memDataIn[127:96];
   end
 end
+
 endmodule
