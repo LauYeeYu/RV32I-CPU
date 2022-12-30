@@ -206,6 +206,7 @@ always @(posedge clockIn) begin
     rsAddValidReg    <= 1'b0;
     rfUpdateValidReg <= 1'b0;
     lsbAddValidReg   <= 1'b0;
+    pending          <= 1'b0;
   end else if (readyIn) begin
     if (stall) begin
       if (robReady) begin
