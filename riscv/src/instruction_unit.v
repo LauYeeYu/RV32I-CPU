@@ -1,3 +1,4 @@
+`define PRINT_INSTRUCTION_TYPE // Show the information of the instruction on instruction fetch
 module InstructionUnit #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
@@ -131,7 +132,7 @@ assign robAddValue     = robValueReg;
 assign robAddDest      = destReg;
 assign robAddAddr      = robAddrReg;
 assign robAddInstrAddr = robInstrAddrReg;
-assign robAddjump      = jumpReg;
+assign robAddJump      = jumpReg;
 
 assign rfUpdateRobId = robNext;
 assign rfUpdateDest  = destReg;
@@ -220,23 +221,36 @@ always @(posedge clockIn) begin
     end else begin
       // Fetch
       if (~full && instrInValid && ~pending) begin
-       instrReg      <= instrIn;
-       instrAddrReg  <= PC;
-       instrRegValid <= 1'b1;
-       case (instrIn[6:0])
-         7'b1100011: begin // branch
-           pending <= 1'b1;
-         end
-         7'b1101111: begin // JAL
-           pending <= 1'b1;
-         end
-         7'b1100111: begin // JALR
-           pending <= 1'b1;
-         end
-         default: begin // Other instructions
-         PC <= PC + 4;
-         end
-       endcase
+        instrReg      <= instrIn;
+        instrAddrReg  <= PC;
+        instrRegValid <= 1'b1;
+        case (instrIn[6:0])
+          7'b1100011: begin // branch
+            pending <= 1'b1;
+          end
+          7'b1101111: begin // JAL
+            pending <= 1'b1;
+          end
+          7'b1100111: begin // JALR
+            pending <= 1'b1;
+          end
+          default: begin // Other instructions
+          PC <= PC + 4;
+          end
+        endcase
+`ifdef PRINT_INSTRUCTION_TYPE
+        case (instrIn[6:0])
+          7'b0110111: $display("LUI(%h): %h", PC, instrIn);
+          7'b0010111: $display("AUIPC(%h): %h", PC, instrIn);
+          7'b1100011: $display("branch(%h): %h", PC, instrIn);
+          7'b1101111: $display("JAL(%h): %h", PC, instrIn);
+          7'b1100111: $display("JALR(%h): %h", PC, instrIn);
+          7'b0000011: $display("load(%h): %h", PC, instrIn);
+          7'b0100011: $display("store(%h): %h", PC, instrIn);
+          7'b0010011: $display("immediate(%h): %h", PC, instrIn);
+          7'b0110011: $display("calculate(%h): %h", PC, instrIn);
+        endcase
+`endif
       end else begin
        instrRegValid <= 1'b0;
       end
