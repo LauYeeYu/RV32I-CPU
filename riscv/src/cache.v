@@ -52,7 +52,6 @@ module Cache #(
 
   // Buffer
   reg                    loading;
-  reg                    waitingForMemRead;
   reg                    resultReady;
   reg                    readWrite; // 1: read, 0: write
   reg                    idle;
@@ -142,13 +141,11 @@ module Cache #(
       progress          <= 0;
       mutableReady      <= 0;
       memReadWrite      <= 1;
-      waitingForMemRead <= 0;
       accessTypeReg     <= 2'b00;
-    end else if (waitingForMemRead) begin
-      waitingForMemRead <= 0;
     end else begin
       // If the memory has already been loaded
       if (resultReady) begin
+        buffer[BLOCK_SIZE*8-1:BLOCK_SIZE*8-8] <= memIn;
         if (readWrite) begin // read
           if (fromICache) begin
             icacheMemInValid <= 1;
@@ -166,32 +163,16 @@ module Cache #(
       end
 
       if (mutableReady) begin
-        case (accessTypeReg)
-          2'b01: begin // Byte
-            if (readWriteReg) begin // read
-              dcacheMutableInValid <= 1;
-              dataReg[7:0]         <= memIn;
-            end else begin // write
-              dcacheMutableWriteSuc  <= 1;
-            end
-          end
-          2'b10: begin // Halfword
-            if (readWriteReg) begin // read
-              dcacheMutableInValid <= 1;
-              dataReg[15:8]        <= memIn;
-            end else begin // write
-              dcacheMutableWriteSuc  <= 1;
-            end
-          end
-          2'b11: begin // Word
-            if (readWriteReg) begin // read
-              dcacheMutableInValid <= 1;
-              dataReg[31:24]       <= memIn;
-            end else begin // write
-              dcacheMutableWriteSuc  <= 1;
-            end
-          end
-        endcase
+        if (readWriteReg) begin // read
+          dcacheMutableInValid <= 1;
+          case (accessTypeReg)
+            2'b01: dataReg[7:0]   <= memIn; // Byte
+            2'b10: dataReg[15:8]  <= memIn; // Halfword
+            2'b11: dataReg[31:24] <= memIn; // Word
+          endcase
+        end else begin // write
+          dcacheMutableWriteSuc <= 1;
+        end
         accessTypeReg <= 2'b00;
         mutableReady  <= 0;
         memReadWrite  <= 1;
@@ -213,7 +194,7 @@ module Cache #(
             progress    <= 0;
             resultReady <= 1;
             if (readWrite) begin // read
-              buffer[BLOCK_SIZE*8-1:BLOCK_SIZE*8-8] <= memIn;
+              buffer[4'b1111*8-1:4'b1111*8-8] <= memIn;
             end else begin // write
               memOutReg <= buffer[BLOCK_SIZE*8-1:BLOCK_SIZE*8-8];
               memAddrReg <= {tag, progress};
@@ -222,7 +203,7 @@ module Cache #(
           4'b1110: begin
             progress <= 4'b1111;
             if (readWrite) begin
-              buffer[4'b1110*8+7:4'b1110*8] <= memIn;
+              buffer[4'b1110*8-1:4'b1110*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1111};
             end else begin
               memOutReg <= buffer[4'b1110*8+7:4'b1110*8];
@@ -232,7 +213,7 @@ module Cache #(
           4'b1101: begin
             progress <= 4'b1110;
             if (readWrite) begin
-              buffer[4'b1101*8+7:4'b1101*8] <= memIn;
+              buffer[4'b1101*8-1:4'b1101*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1110};
             end else begin
               memOutReg <= buffer[4'b1101*8+7:4'b1101*8];
@@ -242,7 +223,7 @@ module Cache #(
           4'b1100: begin
             progress <= 4'b1101;
             if (readWrite) begin
-              buffer[4'b1100*8+7:4'b1100*8] <= memIn;
+              buffer[4'b1100*8-1:4'b1100*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1101};
             end else begin
               memOutReg <= buffer[4'b1100*8+7:4'b1100*8];
@@ -252,7 +233,7 @@ module Cache #(
           4'b1011: begin
             progress <= 4'b1100;
             if (readWrite) begin
-              buffer[4'b1011*8+7:4'b1011*8] <= memIn;
+              buffer[4'b1011*8-1:4'b1011*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1100};
             end else begin
               memOutReg <= buffer[4'b1011*8+7:4'b1011*8];
@@ -262,7 +243,7 @@ module Cache #(
           4'b1010: begin
             progress <= 4'b1011;
             if (readWrite) begin
-              buffer[4'b1010*8+7:4'b1010*8] <= memIn;
+              buffer[4'b1010*8-1:4'b1010*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1011};
             end else begin
               memOutReg <= buffer[4'b1010*8+7:4'b1010*8];
@@ -272,7 +253,7 @@ module Cache #(
           4'b1001: begin
             progress <= 4'b1010;
             if (readWrite) begin
-              buffer[4'b1001*8+7:4'b1001*8] <= memIn;
+              buffer[4'b1001*8-1:4'b1001*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1010};
             end else begin
               memOutReg <= buffer[4'b1001*8+7:4'b1001*8];
@@ -282,7 +263,7 @@ module Cache #(
           4'b1000: begin
             progress <= 4'b1001;
             if (readWrite) begin
-              buffer[4'b1000*8+7:4'b1000*8] <= memIn;
+              buffer[4'b1000*8-1:4'b1000*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1001};
             end else begin
               memOutReg <= buffer[4'b1000*8+7:4'b1000*8];
@@ -292,7 +273,7 @@ module Cache #(
           4'b0111: begin
             progress <= 4'b1000;
             if (readWrite) begin
-              buffer[4'b0111*8+7:4'b0111*8] <= memIn;
+              buffer[4'b0111*8-1:4'b0111*8-8] <= memIn;
               memAddrReg <= {tag, 4'b1000};
             end else begin
               memOutReg <= buffer[4'b0111*8+7:4'b0111*8];
@@ -302,7 +283,7 @@ module Cache #(
           4'b0110: begin
             progress <= 4'b0111;
             if (readWrite) begin
-              buffer[4'b0110*8+7:4'b0110*8] <= memIn;
+              buffer[4'b0110*8-1:4'b0110*8-8] <= memIn;
               memAddrReg <= {tag, 4'b0111};
             end else begin
               memOutReg <= buffer[4'b0110*8+7:4'b0110*8];
@@ -312,7 +293,7 @@ module Cache #(
           4'b0101: begin
             progress <= 4'b0110;
             if (readWrite) begin
-              buffer[4'b0101*8+7:4'b0101*8] <= memIn;
+              buffer[4'b0101*8-1:4'b0101*8-8] <= memIn;
               memAddrReg <= {tag, 4'b0110};
             end else begin
               memOutReg <= buffer[4'b0101*8+7:4'b0101*8];
@@ -322,7 +303,7 @@ module Cache #(
           4'b0100: begin
             progress <= 4'b0101;
             if (readWrite) begin
-              buffer[4'b0100*8+7:4'b0100*8] <= memIn;
+              buffer[4'b0100*8-1:4'b0100*8-8] <= memIn;
               memAddrReg <= {tag, 4'b0101};
             end else begin
               memOutReg <= buffer[4'b0100*8+7:4'b0100*8];
@@ -332,7 +313,7 @@ module Cache #(
           4'b0011: begin
             progress <= 4'b0100;
             if (readWrite) begin
-              buffer[4'b0011*8+7:4'b0011*8] <= memIn;
+              buffer[4'b0011*8-1:4'b0011*8-8] <= memIn;
               memAddrReg <= {tag, 4'b0100};
             end else begin
               memOutReg <= buffer[4'b0011*8+7:4'b0011*8];
@@ -342,7 +323,7 @@ module Cache #(
           4'b0010: begin
             progress <= 4'b0011;
             if (readWrite) begin
-              buffer[4'b0010*8+7:4'b0010*8] <= memIn;
+              buffer[4'b0010*8-1:4'b0010*8-8] <= memIn;
               memAddrReg <= {tag, 4'b0011};
             end else begin
               memOutReg <= buffer[4'b0010*8+7:4'b0010*8];
@@ -352,7 +333,7 @@ module Cache #(
           4'b0001: begin
             progress <= 4'b0010;
             if (readWrite) begin
-              buffer[4'b0001*8+7:4'b0001*8] <= memIn;
+              buffer[4'b0001*8-1:4'b0001*8-8] <= memIn;
               memAddrReg <= {tag, 4'b0010};
             end else begin
               memOutReg <= buffer[4'b0001*8+7:4'b0001*8];
@@ -362,7 +343,6 @@ module Cache #(
           4'b0000: begin
             progress <= 4'b0001;
             if (readWrite) begin
-              buffer[4'b0000*8+7:4'b0000*8] <= memIn;
               memAddrReg <= {tag, 4'b0001};
             end else begin
               memReadWrite <= 1'b0;
@@ -375,47 +355,50 @@ module Cache #(
         idle           <= 0;
         acceptWriteReg <= 0;
       end else if (mutableLoading) begin
-      case (mutableProgress)
-        2'b01: begin
-          if (readWriteReg) memAddrReg <= dataAddrReg + 1;
-          else              memOutReg  <= dataReg[15:8];
-          if (accessTypeReg == 2'b10) mutableReady <= 1;
-          mutableProgress <= 2'b10;
-        end
-        2'b10: begin
-          if (readWriteReg) memAddrReg <= dataAddrReg + 2;
-          else              memOutReg  <= dataReg[23:16];
-          mutableProgress <= 2'b11;
-        end
-        2'b11: begin
-          if (readWriteReg) memAddrReg <= dataAddrReg + 3;
-          else              memOutReg  <= dataReg[31:24];
-          mutableReady <= 1;
-        end
-      endcase
-      end else if (mutableAddr && !mutableReady) begin
-        waitingForMemRead <= readWriteReg;
-        case (accessTypeReg)
-          2'b01: begin // Byte
-            mutableReady <= 1;
-            memReadWrite <= readWriteReg;
-            if (readWriteReg) memAddrReg <= dataAddrReg;
-            else              memOutReg  <= dataReg[7:0];
+        case (mutableProgress)
+          2'b00: begin
+            memAddrReg <= dataAddrReg + 1;
+            mutableProgress <= 2'b01;
+            if (accessTypeReg == 2'b01) begin
+              mutableReady   <= 1;
+              mutableLoading <= 0;
+            end
           end
-          default: begin // Halfword & Word
-            mutableProgress <= 1;
-            mutableLoading  <= 1;
-            memReadWrite    <= readWriteReg;
-            if (readWriteReg) memAddrReg <= dataAddrReg;
-            else              memOutReg  <= dataReg[7:0];
+          2'b01: begin
+            memAddrReg      <= dataAddrReg + 2;
+            mutableProgress <= 2'b10;
+            if (readWriteReg) dataReg[7:0] <= memIn;
+            else              memOutReg    <= dataReg[15:8];
+            if (accessTypeReg == 2'b10) begin
+              mutableReady   <= 1;
+              mutableLoading <= 0;
+            end
+          end
+          2'b10: begin
+            memAddrReg      <= dataAddrReg + 3;
+            mutableProgress <= 2'b11;
+            if (readWriteReg) dataReg[15:8] <= memIn;
+            else              memOutReg     <= dataReg[23:16];
+          end
+          2'b11: begin
+            mutableReady   <= 1;
+            mutableLoading <= 0;
+            if (readWriteReg) dataReg[23:16] <= memIn;
+            else              memOutReg      <= dataReg[31:24];
           end
         endcase
+      end else if (mutableAddr && !mutableReady) begin
+        mutableProgress <= readWriteReg ? 2'b00 : 2'b01;
+        mutableLoading  <= readWriteReg == 1 || accessTypeReg != 2'b01;
+        mutableReady    <= readWriteReg == 0 && accessTypeReg == 2'b01;
+        memReadWrite    <= readWriteReg;
+        memAddrReg      <= dataAddrReg;
+        if (!readWriteReg) memOutReg  <= dataReg[7:0];
       end else if (dcacheMiss) begin // dcache have the priority to use memory
         readWrite         <= dcacheReadWriteOut;
         fromICache        <= 0;
         loading           <= 1;
         progress          <= 0;
-        waitingForMemRead <= dcacheReadWriteOut;
         acceptWriteReg    <= ~dcacheReadWriteOut;
         if (dcacheReadWriteOut) begin // read
           tag        <= dcacheMissAddr;
@@ -429,7 +412,6 @@ module Cache #(
         fromICache        <= 1;
         loading           <= 1;
         progress          <= 0;
-        waitingForMemRead <= 1;
         tag               <= instrAddrIn[31:BLOCK_WIDTH];
         memAddrReg        <= {instrAddrIn[31:BLOCK_WIDTH], 4'b0000};
       end else begin
