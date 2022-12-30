@@ -135,12 +135,12 @@ wire [RS_WIDTH-1:0] nextCalc = ready[0]  ? 4'b0000 :
                                ready[13] ? 4'b1101 :
                                ready[14] ? 4'b1110 :
                                            4'b1111;
-wire v1ToCalc     = value1[nextCalc];
-wire v2ToCalc     = value2[nextCalc];
-wire opToCalc     = op[nextCalc];
-wire robIdToCalc  = robIndex[nextCalc];
-wire occupiedNext = occupied + (addValid ? 1'b1 : 1'b0)
-                             - (hasNextCalc ? 1'b1 : 1'b0);
+wire v1ToCalc                    = value1[nextCalc];
+wire v2ToCalc                    = value2[nextCalc];
+wire opToCalc                    = op[nextCalc];
+wire robIdToCalc                 = robIndex[nextCalc];
+wire [RS_WIDTH-1:0] occupiedNext = occupied + (addValid ? 1'b1 : 1'b0)
+                                            - (hasNextCalc ? 1'b1 : 1'b0);
 
 assign full = (occupied > 13);
 
@@ -149,6 +149,8 @@ always @(posedge clockIn) begin
   if (resetIn) begin
     valid          <= {2**RS_WIDTH{1'b0}};
     occupied       <= {RS_WIDTH{1'b0}};
+    hasDep1        <= {2**RS_WIDTH{1'b0}};
+    hasDep2        <= {2**RS_WIDTH{1'b0}};
     calculating    <= 0;
     updateValidReg <= 0;
   end else begin
@@ -191,13 +193,15 @@ always @(posedge clockIn) begin
     end
 
     // Dispatch the nextCalc
-    calculating     <= hasNextCalc;
-    v1Cal           <= v1ToCalc;
-    v2Cal           <= v2ToCalc;
-    opCal           <= opToCalc;
-    robIdCal        <= robIdToCalc;
-    rsIdCal         <= nextCalc;
-    valid[nextCalc] <= 0;
+    calculating       <= hasNextCalc;
+    v1Cal             <= v1ToCalc;
+    v2Cal             <= v2ToCalc;
+    opCal             <= opToCalc;
+    robIdCal          <= robIdToCalc;
+    rsIdCal           <= nextCalc;
+    valid[nextCalc]   <= 0;
+    hasDep1[nextCalc] <= 1;
+    hasDep2[nextCalc] <= 1;
   end
 end
 
