@@ -1,3 +1,4 @@
+`define PRINT_REG_CHANGE
 module ReorderBuffer #(
   parameter ROB_WIDTH = 4,
   parameter ROB_SIZE = 2**ROB_WIDTH,
@@ -161,6 +162,9 @@ always @(posedge clockIn) begin
     case (topType)
       2'b00: begin // register write
         if (ready) begin
+`ifdef PRINT_REG_CHANGE
+          $display("ROB: write reg %d with value %d", topDestReg, topValue);
+`endif
           valid[beginIndex] <= 1'b0;
           beginIndex        <= beginIndex + 1'b1;
           regUpdateDestReg  <= topDestReg;
