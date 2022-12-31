@@ -85,9 +85,11 @@ wire                    topSentToDc   = sentToDcache[beginIndex];
 wire                    topReadWrite  = readWrite[beginIndex];
 wire [ROB_WIDTH-1:0]    topRobId      = robId[beginIndex];
 wire                    topReadyState = ready[beginIndex];
+wire                    topBaseHasDep = baseHasDep[beginIndex];
 wire [31:0]             topBaseAddr   = baseAddr[beginIndex];
 wire [31:0]             topOffset     = offset[beginIndex];
 wire [31:0]             topAddr       = topBaseAddr + topOffset;
+wire                    topDataHasDep = dataHasDep[beginIndex];
 wire [31:0]             topData       = data[beginIndex];
 wire [LSB_OP_WIDTH-1:0] topOp         = op[beginIndex];
 
@@ -100,9 +102,9 @@ wire [1:0]  topAccessType = topOp == 3'b000 ? 2'b01 : // Byte
                                               2'b10;  // Half Word;
 
 wire isIoAddr = (topAddr[17:16] == 2'b11);
-wire topReady = isIoAddr     ? topReadyState :
-                topReadWrite ? baseHasDep[beginIndex] :
-                               baseHasDep[beginIndex] && dataHasDep[beginIndex];
+wire topReady = topBaseHasDep ? 1'b0 :
+                isIoAddr      ? topReadyState :
+                topReadWrite  ? 1'b1 : topDataHasDep;
 
 wire baseHasDepMerged = addBaseHasDep &&
                         !((dataValid && (addBaseConstrtId == updateRobIdReg)) ||
