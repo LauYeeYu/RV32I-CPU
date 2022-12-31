@@ -120,8 +120,7 @@ module Cache #(
     .missAddr          (dcacheMissAddr),
     .miss              (dcacheMiss),
     .readWriteOut      (dcacheReadWriteOut),
-    .memAddrOut        (dcacheMemAddrOut),
-    .memOut            (dcacheMemDataOut),
+    .writeBackOut      (dcacheMemDataOut),
     .dataOutValid      (dataOutValid),
     .dataOut           (dataOut),
     .dataWriteSuc      (dataWriteSuc)
@@ -153,13 +152,15 @@ module Cache #(
             dcacheMemInValid <= 1;
           end
         end else begin // write
-          memReadWrite <= 1; // set back to read state
+          memReadWrite   <= 1; // set back to read state
+          acceptWriteReg <= 1;
         end
         // reset (missed memory cannot be read within 1 clock)
         resultReady <= 1'b0;
       end else begin
         icacheMemInValid <= 0;
         dcacheMemInValid <= 0;
+        acceptWriteReg   <= 0;
       end
 
       if (mutableReady) begin
@@ -177,7 +178,7 @@ module Cache #(
         mutableReady  <= 0;
         memReadWrite  <= 1;
       end else begin
-        dcacheMutableInValid <= 0;
+        dcacheMutableInValid  <= 0;
         dcacheMutableWriteSuc <= 0;
       end
 
