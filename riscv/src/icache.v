@@ -20,9 +20,9 @@ reg [31:BLOCK_WIDTH+CACHE_WIDTH] cacheTag [CACHE_SIZE-1:0];
 reg [31:0]                       cacheData[CACHE_SIZE-1:0][3:0];
 
 // Utensils
-wire [CACHE_WIDTH-1:BLOCK_WIDTH] instrPos = instrAddrIn[CACHE_WIDTH-1:BLOCK_WIDTH];
-wire [CACHE_WIDTH-1:BLOCK_WIDTH] memPos   = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
-wire [BLOCK_WIDTH-3:0]           blockPos = instrAddrIn[BLOCK_WIDTH-1:2];
+wire [CACHE_WIDTH-1:0] instrPos = instrAddrIn[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
+wire [CACHE_WIDTH-1:0] memPos   = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
+wire [BLOCK_WIDTH-3:0] blockPos = instrAddrIn[BLOCK_WIDTH-1:2];
 wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_WIDTH]);
 
 assign miss          = ~hit;
