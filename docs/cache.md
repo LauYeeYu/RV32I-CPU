@@ -157,8 +157,7 @@ module DCache #(
   output wire                    miss,              // miss signal (for input and output)
   output wire [31:BLOCK_WIDTH]   missAddr,          // miss address (for input and output)
   output wire                    readWriteOut,      // read/write select for mem (read: 1, write: 0)
-  output wire [31:BLOCK_WIDTH]   memAddrOut,        // data address
-  output wire [BLOCK_SIZE*8-1:0] memOut,            // data to write
+  output wire [BLOCK_SIZE*8-1:0] writeBackOut,      // data to write
   output wire                    dataOutValid,      // data output valid signal (Load & Store Buffer)
   output wire [31:0]             dataOut,           // data (Load & Store Buffer)
   output wire                    dataWriteSuc       // data write success signal (Load Store Buffer)
