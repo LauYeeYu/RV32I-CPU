@@ -413,7 +413,7 @@ always @(posedge clockIn) begin
           lsbAddBaseHasDepReg    <= rs1Constraint;
           lsbAddBaseReg          <= rs1RealValue;
           lsbAddBaseConstrtIdReg <= rs1Dependency;
-          lsbAddOffsetReg        <= signedExtImm;
+          lsbAddOffsetReg        <= storeDiff;
           lsbAddDataHasDepReg    <= rs2Constraint;
           lsbAddDataReg          <= rs2RealValue;
           lsbAddDataConstrtIdReg <= rs2Dependency;
