@@ -1,3 +1,4 @@
+`define PRINT_RESULT
 module LoadStoreBuffer #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
@@ -199,9 +200,19 @@ always @(posedge clockIn) begin
           if (topSentToDc) begin
             accessTypeReg <= 2'b00;
             if (topReadWrite) begin // read
-              if (dataValid) beginIndex <= beginIndex + 1;
+              if (dataValid) begin
+`ifdef PRINT_RESULT
+                $display("LSB: Read data, at 0x%h, value 0x%h", topAddr, dataIn);
+`endif
+                beginIndex <= beginIndex + 1;
+              end
             end else begin // write
-              if (dataWriteSuc) beginIndex <= beginIndex + 1;
+              if (dataWriteSuc) begin
+`ifdef PRINT_RESULT
+                $display("LSB: Write data, at 0x%h, value 0x%h", topAddr, topData);
+`endif
+                beginIndex <= beginIndex + 1;
+              end
             end
           end else begin
             case (topOp)
