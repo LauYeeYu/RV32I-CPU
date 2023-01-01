@@ -134,7 +134,7 @@ assign robAddAddr      = robAddrReg;
 assign robAddInstrAddr = robInstrAddrReg;
 assign robAddJump      = jumpReg;
 
-assign rfUpdateRobId = robNext;
+assign rfUpdateRobId = robAddIndexReg;
 assign rfUpdateDest  = destReg;
 assign rfUpdateValid = rfUpdateValidReg;
 
