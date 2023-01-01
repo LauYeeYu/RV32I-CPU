@@ -64,6 +64,8 @@ reg                 regUpdateValidReg;
 reg [4:0]           regUpdateDestReg;
 reg [31:0]          regValueReg;
 reg [ROB_WIDTH-1:0] regUpdateRobIdReg;
+reg [ROB_WIDTH-1:0] robBeginIdReg;
+reg                 beginValidReg;
 
 assign clear           = clearReg;
 assign newPc           = newPcReg;
@@ -111,8 +113,8 @@ assign rs1Ready    = valid[rs1Dep] & ready[rs1Dep];
 assign rs1Value    = value[rs1Dep];
 assign rs2Ready    = valid[rs1Dep] & ready[rs2Dep];
 assign rs2Value    = value[rs2Dep];
-assign robBeginId  = beginIndex;
-assign beginValid  = notEmpty;
+assign robBeginId  = robBeginIdReg;
+assign beginValid  = beginValidReg;
 
 always @* begin
   if (addValid) begin
@@ -153,11 +155,17 @@ always @(posedge clockIn) begin
     clearReg           <= 1'b0;
     regUpdateValidReg  <= 1'b0;
     predictUpdValidReg <= 1'b0;
+    robBeginIdReg      <= {ROB_WIDTH{1'b0}};
+    beginValidReg      <= 1'b0;
   end else if (clearReg) begin
     clearReg           <= 1'b0;
     regUpdateValidReg  <= 1'b0;
     predictUpdValidReg <= 1'b0;
+    robBeginIdReg      <= {ROB_WIDTH{1'b0}};
+    beginValidReg      <= 1'b0;
   end else if (notEmpty) begin
+    robBeginIdReg      <= beginIndex;
+    beginValidReg      <= 1'b1;
     regUpdateValidReg  <= needUpdateReg;
     predictUpdValidReg <= nextPredictUpdValid;
     case (topType)
@@ -188,8 +196,13 @@ always @(posedge clockIn) begin
           end
         end
       end
+      2'b10: begin
+        beginIndex <= beginIndex + 1'b1;
+      end
     endcase
   end else begin
+    robBeginIdReg      <= {ROB_WIDTH{1'b0}};
+    beginValidReg      <= 1'b0;
     regUpdateValidReg  <= 1'b0;
     predictUpdValidReg <= 1'b0;
   end

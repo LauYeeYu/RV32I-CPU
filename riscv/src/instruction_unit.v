@@ -188,7 +188,7 @@ wire [31:0] rs1RealValue  = rs1Dirty ?
                               (rsUpdate  && (rs1Dependency == rsUpdateRobId)) ? rsUpdateVal :
                               (lsbUpdate && (rs1Dependency == lsbUpdateRobId)) ? lsbUpdateVal : 0 :
                             rs1Value;
-wire       rs2Constraint = rs2Dirty &&
+wire        rs2Constraint = rs2Dirty &&
                             !((rsUpdate  && (rs2Dependency == rsUpdateRobId)) ||
                               (lsbUpdate && (rs2Dependency == lsbUpdateRobId)));
 wire [31:0] rs2RealValue = rs2Dirty ?

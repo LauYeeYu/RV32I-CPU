@@ -103,8 +103,8 @@ wire [1:0]  topAccessType = topOp == 3'b000 ? 2'b01 : // Byte
 
 wire isIoAddr = (topAddr[17:16] == 2'b11);
 wire topReady = topBaseHasDep ? 1'b0 :
-                isIoAddr      ? topReadyState :
-                topReadWrite  ? 1'b1 : topDataHasDep;
+                topReadWrite  ? isIoAddr ? topReadyState : 1'b1 // read
+                              : topReadyState & ~topDataHasDep; // write
 
 wire baseHasDepMerged = addBaseHasDep &&
                         !((dataValid && (addBaseConstrtId == updateRobIdReg)) ||
@@ -168,6 +168,7 @@ always @(posedge clockIn) begin
     // Add new data to the buffer
     if (addValid) begin
       sentToDcache [endIndex] <= 1'b0;
+      ready        [endIndex] <= 1'b0; // No need to check whether the ready state is 1 or 0
       readWrite    [endIndex] <= addReadWrite;
       robId        [endIndex] <= addRobId;
       baseHasDep   [endIndex] <= baseHasDepMerged;

@@ -66,7 +66,6 @@ assign rs1Dependency = constraintId[reg1Reg];
 assign rs2Dependency = constraintId[reg2Reg];
 assign rs1Value = hasconstraint[reg1Reg] ? robRs1Value : register[reg1Reg];
 assign rs2Value = hasconstraint[reg2Reg] ? robRs2Value : register[reg2Reg];
-wire [31:0] register0 = register[0];
 
 // The daemon for register file
 integer i;
