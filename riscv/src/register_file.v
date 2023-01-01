@@ -48,7 +48,7 @@ end
 
 // Update the value of register
 always @* begin
-  if (regUpdateValid && rfUpdateDest != 5'b00000) begin
+  if (regUpdateValid && regUpdateDest != 5'b00000) begin
     register[regUpdateDest] <= regUpdateValue;
     if (regUpdateRobId == constraintId[regUpdateDest] &&
         !(rfUpdateValid && rfUpdateDest == regUpdateDest)) begin
@@ -64,8 +64,9 @@ assign rs1Dirty  = hasconstraint[reg1Reg] & ~robRs1Ready;
 assign rs2Dirty  = hasconstraint[reg2Reg] & ~robRs2Ready;
 assign rs1Dependency = constraintId[reg1Reg];
 assign rs2Dependency = constraintId[reg2Reg];
-assign rs1Value = hasconstraint ? robRs1Value : register[reg1Reg];
-assign rs2Value = hasconstraint ? robRs2Value : register[reg2Reg];
+assign rs1Value = hasconstraint[reg1Reg] ? robRs1Value : register[reg1Reg];
+assign rs2Value = hasconstraint[reg2Reg] ? robRs2Value : register[reg2Reg];
+wire [31:0] register0 = register[0];
 
 // The daemon for register file
 integer i;
