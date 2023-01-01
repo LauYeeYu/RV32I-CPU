@@ -135,10 +135,10 @@ wire [RS_WIDTH-1:0] nextCalc = ready[0]  ? 4'b0000 :
                                ready[13] ? 4'b1101 :
                                ready[14] ? 4'b1110 :
                                            4'b1111;
-wire v1ToCalc                    = value1[nextCalc];
-wire v2ToCalc                    = value2[nextCalc];
-wire opToCalc                    = op[nextCalc];
-wire robIdToCalc                 = robIndex[nextCalc];
+wire [31:0] v1ToCalc             = value1[nextCalc];
+wire [31:0] v2ToCalc             = value2[nextCalc];
+wire [RS_OP_WIDTH-1:0] opToCalc  = op[nextCalc];
+wire [ROB_WIDTH-1:0] robIdToCalc = robIndex[nextCalc];
 wire [RS_WIDTH-1:0] occupiedNext = occupied + (addValid ? 1'b1 : 1'b0)
                                             - (hasNextCalc ? 1'b1 : 1'b0);
 
