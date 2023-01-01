@@ -28,10 +28,10 @@ module DCache #(
 );
 
 // cache block
-reg [CACHE_SIZE-1:0]   cacheValid;
-reg [CACHE_SIZE-1:0]   cacheDirty;
-reg [31:BLOCK_WIDTH]   cacheTag  [CACHE_SIZE-1:0];
-reg [BLOCK_SIZE*8-1:0] cacheData [CACHE_SIZE-1:0];
+reg [CACHE_SIZE-1:0]             cacheValid;
+reg [CACHE_SIZE-1:0]             cacheDirty;
+reg [31:CACHE_WIDTH+BLOCK_WIDTH] cacheTag  [CACHE_SIZE-1:0];
+reg [BLOCK_SIZE*8-1:0]           cacheData [CACHE_SIZE-1:0];
 
 // output registers
 reg [31:0]           outReg;
@@ -42,7 +42,7 @@ assign dataOut      = mutableAddr ? mutableMemDataIn : outReg;
 assign dataOutValid = outValidReg | mutableMemInValid;
 assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
 assign miss         = needWriteBack | needLoad;
-assign missAddr     = needWriteBack ? writeBackAddr : loadAddr;
+assign missAddr     = needWriteBack ? writeBackTag : loadTag;
 assign readWriteOut = ~needWriteBack;
 
 // Utensils
@@ -51,11 +51,12 @@ reg [31:0] dataAddrReg;
 reg [31:0] dataReg;
 reg        readWriteReg;
 
-wire [31:CACHE_WIDTH]  dataTag     = dataAddrReg[31:CACHE_WIDTH];
-wire [31:CACHE_WIDTH]  nextDataTag = dataAddrReg[31:CACHE_WIDTH] + 1;
+wire                   onLastLine  = dataAddrReg[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == CACHE_SIZE - 1;
+wire [31:CACHE_WIDTH]  dataTag     = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH];
+wire [31:CACHE_WIDTH]  nextDataTag = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
 wire [CACHE_WIDTH-1:0] dataPos     = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:0] nextDataPos = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH] + 1;
-wire [31:BLOCK_WIDTH]  memPos      = memAddr[CACHE_WIDTH-1:BLOCK_WIDTH];
+wire [CACHE_WIDTH-1:0] memPos      = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 
 wire hit           = cacheValid[dataPos] && (cacheTag[dataPos] == dataTag);
 wire nextHit       = cacheValid[nextDataPos] && (cacheTag[nextDataPos] == nextDataTag);
@@ -67,8 +68,8 @@ wire lineDirty     = cacheDirty[dataPos];
 wire nextLineDirty = cacheDirty[nextDataPos];
 wire needWriteBack = (!mutableAddr && (accessTypeReg != 2'b00)) && (lineDirty || (nextLineUsed && nextLineDirty));
 wire needLoad      = !hit || (nextLineUsed && !nextHit);
-wire [31:CACHE_WIDTH] writeBackAddr = lineDirty ? cacheTag[dataPos] : cacheTag[nextDataPos];
-wire [31:CACHE_WIDTH] loadAddr      = hit ? cacheTag[nextDataPos] : cacheTag[dataPos];
+wire [31:BLOCK_WIDTH] writeBackTag = lineDirty ? {cacheTag[dataPos], dataPos} : {cacheTag[nextDataPos], nextDataPos};
+wire [31:BLOCK_WIDTH] loadTag      = hit ? {nextDataTag, nextDataPos} : {dataTag, dataPos};
 wire ready       = hit && (accessTypeReg != 2'b00) && (!nextLineUsed || nextHit); // mutable address cannot hit
 wire outValid    = ready && readWriteReg;
 wire outRegWrite = ready && !readWriteReg;
@@ -87,7 +88,7 @@ end
 always @* begin
   if (memDataValid) begin
     cacheValid[memPos] <= 1;
-    cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH];
+    cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
     cacheData [memPos] <= memDataIn;
     cacheDirty[memPos] <= 0;
   end

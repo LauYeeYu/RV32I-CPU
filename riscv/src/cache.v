@@ -403,7 +403,7 @@ module Cache #(
         acceptWriteReg    <= ~dcacheReadWriteOut;
         if (dcacheReadWriteOut) begin // read
           tag        <= dcacheMissAddr;
-          memAddrReg <= {tag, 4'b0000};
+          memAddrReg <= {dcacheMissAddr, 4'b0000};
         end else begin // write
           buffer <= dcacheMemDataOut;
         end

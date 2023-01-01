@@ -23,7 +23,7 @@ reg [31:0]                       cacheData[CACHE_SIZE-1:0][3:0];
 wire [CACHE_WIDTH-1:0] instrPos = instrAddrIn[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:0] memPos   = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [BLOCK_WIDTH-3:0] blockPos = instrAddrIn[BLOCK_WIDTH-1:2];
-wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_WIDTH]);
+wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_WIDTH+BLOCK_WIDTH]);
 
 assign miss          = ~hit;
 assign instrOutValid = hit;
@@ -36,7 +36,7 @@ end
 always @* begin
   if (memDataValid) begin
     cacheValid[memPos]    <= 1'b1;
-    cacheTag  [memPos]    <= memAddr[31:CACHE_WIDTH];
+    cacheTag  [memPos]    <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
     cacheData [memPos][0] <= memDataIn[31:0];
     cacheData [memPos][1] <= memDataIn[63:32];
     cacheData [memPos][2] <= memDataIn[95:64];
