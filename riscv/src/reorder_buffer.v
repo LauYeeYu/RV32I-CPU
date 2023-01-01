@@ -149,6 +149,7 @@ always @(posedge clockIn) begin
     beginIndex         <= {ROB_WIDTH{1'b0}};
     endIndex           <= {ROB_WIDTH{1'b0}};
     valid              <= {ROB_SIZE{1'b0}};
+    ready              <= {ROB_SIZE{1'b0}};
     clearReg           <= 1'b0;
     regUpdateValidReg  <= 1'b0;
     predictUpdValidReg <= 1'b0;
@@ -161,7 +162,7 @@ always @(posedge clockIn) begin
     predictUpdValidReg <= nextPredictUpdValid;
     case (topType)
       2'b00: begin // register write
-        if (ready) begin
+        if (topReady) begin
 `ifdef PRINT_REG_CHANGE
           $display("ROB: write reg %d with value %d", topDestReg, topValue);
 `endif
