@@ -11,7 +11,7 @@ module Predictor #(
   output wire        jump           // jump signal
 );
 
-reg [1:0]             localHistory [LOCAL_WIDTH-1:0];
+reg [1:0]             localHistory [LOCAL_SIZE-1:0];
 reg [LOCAL_WIDTH-1:0] instrPos;
 
 wire [LOCAL_WIDTH-1:0] updatePos = updateInstr[LOCAL_WIDTH+1:2];
