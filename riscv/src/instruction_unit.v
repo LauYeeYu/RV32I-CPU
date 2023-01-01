@@ -318,7 +318,7 @@ always @(posedge clockIn) begin
           jumpReg          <= jump;
           robAddrReg       <= jump ? PC + 4 : PC + branchDiff;
           rfUpdateValidReg <= 1'b0;
-          rsAddValidReg    <= 1'b0;
+          rsAddValidReg    <= 1'b1;
           lsbAddValidReg   <= 1'b0;
           robInstrAddrReg  <= instrAddrReg;
           case (op2)
