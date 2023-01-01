@@ -108,7 +108,8 @@ always @(posedge clkIn) begin
       cacheTag[i]  <= 0;
       cacheData[i] <= 0;
     end
-  end else if (clearIn) begin
+  end else if (clearIn && readWriteReg == 1) begin
+    // abort memory read operation when there is a wrong branch prediction
     outValidReg    <= 0;
     outRegWriteSuc <= 0;
     accessTypeReg  <= 2'b00;

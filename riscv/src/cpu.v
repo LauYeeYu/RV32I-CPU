@@ -370,7 +370,8 @@ LoadStoreBuffer #(
   .LSB_SIZE  (2**LSB_WIDTH),
   .LSB_OP_WIDTH (LSB_OP_WIDTH)
 ) loadStoreBuffer(
-  .resetIn      (mergedReset),
+  .resetIn      (rst_in),
+  .clearIn      (clear),
   .clockIn      (clk_in),
   .lsbUpdate    (lsbUpdate),
   .lsbRobIndex  (lsbUpdateRobId),

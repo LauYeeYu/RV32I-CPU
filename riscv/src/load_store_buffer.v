@@ -6,6 +6,7 @@ module LoadStoreBuffer #(
 ) (
   input  wire                 resetIn,      // resetIn
   input  wire                 clockIn,      // clockIn
+  input  wire                 clearIn,      // clearIn
   output wire                 lsbUpdate,    // load & store buffer update signal
   output wire [ROB_WIDTH-1:0] lsbRobIndex,  // load & store buffer rob index
   output wire [31:0]          lsbUpdateVal, // load & store buffer value
@@ -62,6 +63,7 @@ assign lsbUpdateVal = updateValReg;
 // FIFO
 reg [LSB_WIDTH-1:0]    beginIndex;
 reg [LSB_WIDTH-1:0]    endIndex;
+reg [LSB_SIZE-1:0]     valid;
 reg [LSB_SIZE-1:0]     sentToDcache;
 reg [LSB_SIZE-1:0]     ready;
 reg [LSB_SIZE-1:0]     readWrite; // 0: write, 1: read
@@ -136,6 +138,11 @@ always @(posedge clockIn) begin
   if (resetIn) begin
     beginIndex <= {LSB_WIDTH{1'b0}};
     endIndex   <= {LSB_WIDTH{1'b0}};
+    valid      <= {LSB_SIZE{1'b0}};
+  end else if (clearIn) begin
+    for (i = 0; i < LSB_SIZE; i = i + 1) begin
+      valid <= ready;
+    end
   end else begin
     // Handle the update data from the reservation station
     if (rsUpdate) begin
@@ -167,6 +174,7 @@ always @(posedge clockIn) begin
 
     // Add new data to the buffer
     if (addValid) begin
+      valid        [endIndex] <= 1'b1;
       sentToDcache [endIndex] <= 1'b0;
       ready        [endIndex] <= 1'b0; // No need to check whether the ready state is 1 or 0
       readWrite    [endIndex] <= addReadWrite;
@@ -185,30 +193,37 @@ always @(posedge clockIn) begin
     // Memeory access
     updateReg <= dataValid;
     updateValReg <= dataIn;
-    if (topValid && topReady) begin
-      if (topSentToDc) begin
-        accessTypeReg <= 2'b00;
-        if (topReadWrite) begin // read
-          if (dataValid) beginIndex <= beginIndex + 1;
-        end else begin // write
-          if (dataWriteSuc) beginIndex <= beginIndex + 1;
+    if (topValid) begin
+      if (valid[beginIndex]) begin
+        if (topReady) begin
+          if (topSentToDc) begin
+            accessTypeReg <= 2'b00;
+            if (topReadWrite) begin // read
+              if (dataValid) beginIndex <= beginIndex + 1;
+            end else begin // write
+              if (dataWriteSuc) beginIndex <= beginIndex + 1;
+            end
+          end else begin
+            case (topOp)
+              3'b000: dataOutReg <= signedByte;
+              3'b001: dataOutReg <= signedHW;
+              3'b010: dataOutReg <= topData; // Word
+              3'b011: dataOutReg <= topData;
+              3'b100: dataOutReg <= topData;
+            endcase
+            accessTypeReg  <= topAccessType;
+            readWriteReg   <= topReadWrite;
+            dataAddrReg    <= topAddr;
+            updateRobIdReg <= topRobId;
+            sentToDcache[beginIndex] <= 1'b1;
+          end
+        end else begin
+          accessTypeReg <= 2'b00;
         end
       end else begin
-        case (topOp)
-          3'b000: dataOutReg <= signedByte;
-          3'b001: dataOutReg <= signedHW;
-          3'b010: dataOutReg <= topData; // Word
-          3'b011: dataOutReg <= topData;
-          3'b100: dataOutReg <= topData;
-        endcase
-        accessTypeReg  <= topAccessType;
-        readWriteReg   <= topReadWrite;
-        dataAddrReg    <= topAddr;
-        updateRobIdReg <= topRobId;
-        sentToDcache[beginIndex] <= 1'b1;
-      end
-    end else begin
       accessTypeReg <= 2'b00;
+      beginIndex <= beginIndex + 1;
+      end
     end
   end
 end
