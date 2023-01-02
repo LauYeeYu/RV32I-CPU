@@ -149,8 +149,8 @@ always @(posedge clockIn) begin
   if (resetIn) begin
     valid          <= {2**RS_WIDTH{1'b0}};
     occupied       <= {RS_WIDTH{1'b0}};
-    hasDep1        <= {2**RS_WIDTH{1'b0}};
-    hasDep2        <= {2**RS_WIDTH{1'b0}};
+    hasDep1        <= {2**RS_WIDTH{1'b1}};
+    hasDep2        <= {2**RS_WIDTH{1'b1}};
     calculating    <= 0;
     updateValidReg <= 0;
   end else begin
@@ -199,9 +199,11 @@ always @(posedge clockIn) begin
     opCal             <= opToCalc;
     robIdCal          <= robIdToCalc;
     rsIdCal           <= nextCalc;
-    valid[nextCalc]   <= 0;
-    hasDep1[nextCalc] <= 1;
-    hasDep2[nextCalc] <= 1;
+    if (hasNextCalc) begin
+      valid[nextCalc]   <= 0;
+      hasDep1[nextCalc] <= 1;
+      hasDep2[nextCalc] <= 1;
+    end
   end
 end
 
