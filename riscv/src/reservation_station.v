@@ -88,18 +88,20 @@ reg  [RS_OP_WIDTH-1:0] op       [2**RS_WIDTH-1:0];
 wire [2**RS_WIDTH-1:0] ready = ~hasDep1 & ~hasDep2;
 
 wire hasDep1Merged = addHasDep1 &&
-                     !((lsbUpdate   && (addConstrt1 == lsbRobIndex)) ||
-                       (calculating && (addConstrt1 == robIdCal)));
+                     !((lsbUpdate      && (addConstrt1 == lsbRobIndex)) ||
+                       (calculating    && (addConstrt1 == robIdCal)) ||
+                       (updateValidReg && (addConstrt1 == updateRobIndexReg)));
 wire hasDep2Merged = addHasDep2 &&
-                      !((lsbUpdate   && (addConstrt2 == lsbRobIndex)) ||
-                        (calculating && (addConstrt2 == robIdCal)));
+                      !((lsbUpdate      && (addConstrt2 == lsbRobIndex)) ||
+                        (calculating    && (addConstrt2 == robIdCal)) ||
+                        (updateValidReg && (addConstrt2 == updateRobIndexReg)));
 wire [31:0] value1Merged = addHasDep1 ?
                              (lsbUpdate   && (addConstrt1 == lsbRobIndex)) ? lsbUpdateVal :
-                             (calculating && (addConstrt1 == robIdCal)) ? resultCal : 32'b0 :
+                             (calculating && (addConstrt1 == robIdCal)) ? resultCal : updateValReg :
                            addVal1;
 wire [31:0] value2Merged = addHasDep2 ?
                              (lsbUpdate   && (addConstrt2 == lsbRobIndex)) ? lsbUpdateVal :
-                             (calculating && (addConstrt2 == robIdCal)) ? resultCal : 32'b0 :
+                             (calculating && (addConstrt2 == robIdCal)) ? resultCal : updateValReg :
                             addVal2;
 // The time latency on the nextFree can be reduced by using binary search
 wire [RS_WIDTH-1:0] nextFree = ~valid[0]  ? 4'b0000 :
@@ -147,12 +149,14 @@ assign full = (occupied > 13);
 integer i;
 always @(posedge clockIn) begin
   if (resetIn) begin
-    valid          <= {2**RS_WIDTH{1'b0}};
-    occupied       <= {RS_WIDTH{1'b0}};
-    hasDep1        <= {2**RS_WIDTH{1'b1}};
-    hasDep2        <= {2**RS_WIDTH{1'b1}};
-    calculating    <= 0;
-    updateValidReg <= 0;
+    valid             <= {2**RS_WIDTH{1'b0}};
+    occupied          <= {RS_WIDTH{1'b0}};
+    hasDep1           <= {2**RS_WIDTH{1'b1}};
+    hasDep2           <= {2**RS_WIDTH{1'b1}};
+    calculating       <= 0;
+    updateValidReg    <= 0;
+    updateValReg      <= 32'b0;
+    updateRobIndexReg <= {ROB_WIDTH{1'b0}};
   end else begin
     if (addValid) begin
       valid    [nextFree] <= 1'b1;

@@ -115,17 +115,19 @@ wire topReady = topBaseHasDep ? 1'b0 :
 
 wire baseHasDepMerged = addBaseHasDep &&
                         !((dataValid && (addBaseConstrtId == updateRobIdReg)) ||
-                          (rsUpdate && (addBaseConstrtId == rsRobIndex)));
+                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ||
+                          (updateReg && (addBaseConstrtId == updateRobIdReg)));
 wire dataHasDepMerged = addDataHasDep &&
                         !((dataValid && (addDataConstrtId == updateRobIdReg)) ||
-                          (rsUpdate && (addDataConstrtId == rsRobIndex)));
+                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ||
+                          (updateReg && (addDataConstrtId == updateRobIdReg)));
 wire [31:0] base1Merged = addBaseHasDep ?
                           (dataValid && (addDataConstrtId == updateRobIdReg)) ? dataIn :
-                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
+                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : updateValReg :
                           addBase;
 wire [31:0] data1Merged = addDataHasDep ?
                           (dataValid && (addBaseConstrtId == updateRobIdReg)) ? dataIn :
-                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
+                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : updateValReg :
                           addData;
 
 integer i;
@@ -141,9 +143,12 @@ end
 
 always @(posedge clockIn) begin
   if (resetIn) begin
-    beginIndex <= {LSB_WIDTH{1'b0}};
-    endIndex   <= {LSB_WIDTH{1'b0}};
-    valid      <= {LSB_SIZE{1'b0}};
+    beginIndex     <= {LSB_WIDTH{1'b0}};
+    endIndex       <= {LSB_WIDTH{1'b0}};
+    valid          <= {LSB_SIZE{1'b0}};
+    updateReg      <= 1'b0;
+    updateRobIdReg <= {ROB_WIDTH{1'b0}};
+    updateValReg   <= 32'b0;
   end else if (clearIn) begin
     for (i = 0; i < LSB_SIZE; i = i + 1) begin
       valid <= ready;
