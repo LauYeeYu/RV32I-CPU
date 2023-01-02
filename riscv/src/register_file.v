@@ -73,7 +73,8 @@ integer i;
 always @(posedge clockIn) begin
   if (resetIn) begin
     for (i = 0; i < 32; i = i + 1) begin
-      register[i] <= 32'b0;
+      register[i]     <= 32'b0;
+      constraintId[i] <= {ROB_WIDTH{1'b0}};
     end
     hasconstraint <= {32{1'b0}};
   end else if (clearIn) begin
