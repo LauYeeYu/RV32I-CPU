@@ -79,8 +79,12 @@ reg [ROB_WIDTH-1:0]    dataConstrtId[LSB_SIZE-1:0];
 reg [LSB_OP_WIDTH-1:0] op[LSB_SIZE-1:0];
 
 wire [ROB_WIDTH-1:0] endIndexPlusThree = endIndex + 2'd3;
+wire [ROB_WIDTH-1:0] endIndexPlusTwo   = endIndex + 2'd2;
+wire [ROB_WIDTH-1:0] endIndexPlusOne   = endIndex + 1'd1;
 
-assign full = (beginIndex == endIndexPlusThree);
+assign full = (beginIndex == endIndexPlusThree) ||
+              (beginIndex == endIndexPlusTwo) ||
+              (beginIndex == endIndexPlusOne);
 
 // Utensils
 wire                    topValid      = (beginIndex != endIndex);

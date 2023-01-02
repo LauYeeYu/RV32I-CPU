@@ -1,4 +1,5 @@
 `define PRINT_REG_CHANGE
+`define PRINT_WRONG_BRANCH
 module ReorderBuffer #(
   parameter ROB_WIDTH = 4,
   parameter ROB_SIZE = 2**ROB_WIDTH,
@@ -103,9 +104,13 @@ wire needUpdateReg = notEmpty && (topType == 2'b00) && topReady;
 wire nextPredictUpdValid = notEmpty && (topType == 2'b01) && topReady;
 
 wire [ROB_WIDTH-1:0] endIndexPlusThree = endIndex + 2'd3;
-wire [ROB_WIDTH-1:0] nextEndIndex = addIndex + 1'b1;
+wire [ROB_WIDTH-1:0] endIndexPlusTwo   = endIndex + 2'd2;
+wire [ROB_WIDTH-1:0] endIndexPlusOne   = endIndex + 1'd1;
+wire [ROB_WIDTH-1:0] nextEndIndex      = addIndex + 1'b1;
 
-assign full        = (beginIndex == endIndexPlusThree);
+assign full        = (beginIndex == endIndexPlusThree) ||
+                     (beginIndex == endIndexPlusTwo) ||
+                     (beginIndex == endIndexPlusOne);
 assign next        = endIndex;
 assign reqReady    = ready[request];
 assign reqValue    = value[request];
@@ -117,7 +122,7 @@ assign robBeginId  = robBeginIdReg;
 assign beginValid  = beginValidReg;
 
 always @* begin
-  if (addValid) begin
+  if (addValid && !clearReg) begin
     valid    [addIndex] <= 1'b1;
     ready    [addIndex] <= addReady;
     jump     [addIndex] <= addJump;
@@ -163,6 +168,9 @@ always @(posedge clockIn) begin
     predictUpdValidReg <= 1'b0;
     robBeginIdReg      <= {ROB_WIDTH{1'b0}};
     beginValidReg      <= 1'b0;
+    beginIndex         <= {ROB_WIDTH{1'b0}};
+    endIndex           <= {ROB_WIDTH{1'b0}};
+    valid              <= {ROB_SIZE{1'b0}};
   end else if (notEmpty) begin
     robBeginIdReg      <= beginIndex;
     beginValidReg      <= 1'b1;
@@ -172,7 +180,7 @@ always @(posedge clockIn) begin
       2'b00: begin // register write
         if (topReady) begin
 `ifdef PRINT_REG_CHANGE
-          $display("ROB: write reg %d with value %d", topDestReg, topValue);
+          $display("ROB: write reg %d with value %h", topDestReg, topValue);
 `endif
           valid[beginIndex] <= 1'b0;
           beginIndex        <= beginIndex + 1'b1;
@@ -188,6 +196,9 @@ always @(posedge clockIn) begin
           updInstrAddrReg   <= topInstrAddr;
           jumpResultReg     <= topValue[0];
           if (wrongBranch) begin
+`ifdef PRINT_WRONG_BRANCH
+            $display("ROB: wrong branch, correct to %h", topMissAddr);
+`endif
             beginIndex <= {ROB_WIDTH{1'b0}};
             endIndex   <= {ROB_WIDTH{1'b0}};
             valid      <= {ROB_SIZE{1'b0}};
