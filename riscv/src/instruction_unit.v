@@ -225,18 +225,10 @@ always @(posedge clockIn) begin
         instrAddrReg  <= PC;
         instrRegValid <= 1'b1;
         case (instrIn[6:0])
-          7'b1100011: begin // branch
-            pending <= 1'b1;
-          end
-          7'b1101111: begin // JAL
-            pending <= 1'b1;
-          end
-          7'b1100111: begin // JALR
-            pending <= 1'b1;
-          end
-          default: begin // Other instructions
-          PC <= PC + 4;
-          end
+          7'b1100011: pending <= 1'b1; // branch
+          7'b1101111: pending <= 1'b1; // JAL
+          7'b1100111: pending <= 1'b1; // JALR
+          default:    PC <= PC + 4; // Other instructions
         endcase
 `ifdef PRINT_INSTRUCTION_TYPE
         case (instrIn[6:0])
