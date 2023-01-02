@@ -91,7 +91,7 @@ wire hasDep1Merged = addHasDep1 &&
                      !((lsbUpdate   && (addConstrt1 == lsbRobIndex)) ||
                        (calculating && (addConstrt1 == robIdCal)));
 wire hasDep2Merged = addHasDep2 &&
-                      !((lsbUpdate   && (addConstrt2 == lsbRobIndex)) &&
+                      !((lsbUpdate   && (addConstrt2 == lsbRobIndex)) ||
                         (calculating && (addConstrt2 == robIdCal)));
 wire [31:0] value1Merged = addHasDep1 ?
                              (lsbUpdate   && (addConstrt1 == lsbRobIndex)) ? lsbUpdateVal :
