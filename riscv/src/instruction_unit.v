@@ -259,6 +259,7 @@ always @(posedge clockIn) begin
     // Decode and issue
     if (instrRegValid) begin
       rsAddRobIndexReg <= robNext;
+      robInstrAddrReg  <= instrAddrReg;
       case (op1)
         7'b0110111: begin // LUI
           robAddValidReg   <= regUpdate;
@@ -303,10 +304,10 @@ always @(posedge clockIn) begin
           rsAddValidReg    <= 1'b0;
           lsbAddValidReg   <= 1'b0;
           if (rs1Constraint) begin
-            PC <= rs1RealValue + signedExtImm;
-          end else begin
             stall           <= 1'b1;
             stallDependency <= rs1Dependency;
+          end else begin
+            PC <= rs1RealValue + signedExtImm;
           end
         end
         7'b1100011: begin // branch
@@ -320,7 +321,6 @@ always @(posedge clockIn) begin
           rfUpdateValidReg <= 1'b0;
           rsAddValidReg    <= 1'b1;
           lsbAddValidReg   <= 1'b0;
-          robInstrAddrReg  <= instrAddrReg;
           case (op2)
             3'b000: begin // BEQ
               rsAddOpReg       <= 4'b1000; // EQ
