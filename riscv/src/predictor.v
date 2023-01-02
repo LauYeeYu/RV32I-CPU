@@ -28,7 +28,12 @@ always @(posedge clockIn) begin
   end else begin
     instrPos <= instrAddr[LOCAL_WIDTH+1:2];
     if (updateValid) begin
-      localHistory[updatePos] <= taken ? localHistory[updatePos] + 2'b01 : localHistory[updatePos] - 2'b01;
+      case (localHistory[updatePos])
+        2'b00: localHistory[updatePos] <= taken ? 2'b01 : 2'b00;
+        2'b01: localHistory[updatePos] <= taken ? 2'b11 : 2'b00;
+        2'b10: localHistory[updatePos] <= taken ? 2'b11 : 2'b10;
+        2'b11: localHistory[updatePos] <= taken ? 2'b11 : 2'b10;
+      endcase
     end
   end
 end
