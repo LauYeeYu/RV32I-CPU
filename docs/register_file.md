@@ -21,6 +21,7 @@ module RegisterFile #(
 ) (
   input wire       resetIn, // resetIn
   input wire       clockIn, // clockIn
+  input wire       clearIn, // clearIn
   input wire [4:0] reg1,    // register 1
   input wire [4:0] reg2,    // register 2
 

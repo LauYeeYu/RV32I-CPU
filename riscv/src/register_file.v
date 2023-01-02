@@ -3,6 +3,7 @@ module RegisterFile #(
 ) (
   input wire       resetIn, // resetIn
   input wire       clockIn, // clockIn
+  input wire       clearIn, // clearIn
   input wire [4:0] reg1,    // register 1
   input wire [4:0] reg2,    // register 2
 
@@ -74,6 +75,8 @@ always @(posedge clockIn) begin
     for (i = 0; i < 32; i = i + 1) begin
       register[i] <= 32'b0;
     end
+    hasconstraint <= {32{1'b0}};
+  end else if (clearIn) begin
     hasconstraint <= {32{1'b0}};
   end else begin
     reg1Reg <= reg1;

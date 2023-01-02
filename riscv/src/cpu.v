@@ -261,6 +261,7 @@ RegisterFile #(
 ) registerFile(
   .resetIn (rst_in),
   .clockIn (clk_in),
+  .clearIn (clear),
   .reg1    (fetchRs1),
   .reg2    (fetchRs2),
   // For Instruciton Unit
