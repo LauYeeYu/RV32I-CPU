@@ -27,7 +27,7 @@ wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_W
 
 assign miss          = ~hit;
 assign instrOutValid = hit;
-assign instrOut      = cacheData[instrPos][blockPos];
+assign instrOut      = hit ? cacheData[instrPos][blockPos] : 32'b0;
 
 always @(posedge clkIn) begin
   if (resetIn) cacheValid <= {CACHE_SIZE{1'b0}};
