@@ -99,7 +99,7 @@ wire [31:0]             topValue     = value[beginIndex];
 wire [4:0]              topDestReg   = destReg[beginIndex];
 wire [31:0]             topMissAddr  = missAddr[beginIndex];
 wire [31:0]             topInstrAddr = instrAddr[beginIndex];
-wire                    wrongBranch  = (topJump != value[0]);
+wire                    wrongBranch  = (topJump != topValue[0]);
 
 wire notEmpty = (beginIndex != endIndex);
 wire needUpdateReg = notEmpty && (topType == 2'b00) && topReady;
