@@ -47,12 +47,13 @@ module LoadStoreBuffer #(
   output wire                    full              // full signal
 );
 
-reg [1:0]           accessTypeReg; // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
-reg                 readWriteReg;  // read/write select (read: 1, write: 0)
-reg [31:0]          dataAddrReg;   // data address
-reg [31:0]          dataOutReg;    // data to write
-reg                 processing;    // there is a value to be processed by dcache
-reg [ROB_WIDTH-1:0] updateRobIdReg;
+reg [1:0]              accessTypeReg; // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
+reg                    readWriteReg;  // read/write select (read: 1, write: 0)
+reg [31:0]             dataAddrReg;   // data address
+reg [31:0]             dataOutReg;    // data to write
+reg                    processing;    // there is a value to be processed by dcache
+reg [ROB_WIDTH-1:0]    updateRobIdReg;
+reg [LSB_OP_WIDTH-1:0] processOpReg;
 
 assign accessType   = accessTypeReg;
 assign readWriteOut = readWriteReg;
@@ -60,7 +61,9 @@ assign dataAddr     = dataAddrReg;
 assign dataOut      = dataOutReg;
 assign lsbUpdate    = dataValid;
 assign lsbRobIndex  = updateRobIdReg;
-assign lsbUpdateVal = dataIn;
+assign lsbUpdateVal = (processOpReg == 3'b000) ? {{24{dataIn[7]}},  dataIn[7:0]} : // signed byte
+                      (processOpReg == 3'b001) ? {{16{dataIn[15]}}, dataIn[15:0]} : // signed halfword
+                      dataIn; // unsigned byte, unsigned halfword, word
 
 // FIFO
 reg [LSB_WIDTH-1:0]    beginIndex;
@@ -145,8 +148,24 @@ always @(posedge clockIn) begin
     beginIndex     <= {LSB_WIDTH{1'b0}};
     endIndex       <= {LSB_WIDTH{1'b0}};
     valid          <= {LSB_SIZE{1'b0}};
+    ready          <= {LSB_SIZE{1'b0}};
+    readWrite      <= {LSB_SIZE{1'b1}};
+    baseHasDep     <= {LSB_SIZE{1'b1}};
+    dataHasDep     <= {LSB_SIZE{1'b1}};
     updateRobIdReg <= {ROB_WIDTH{1'b0}};
+    accessTypeReg  <= 2'b00;
     processing     <= 1'b0;
+    processOpReg   <= {LSB_OP_WIDTH{1'b0}};
+    readWriteReg   <= 1'b1;
+    for (i = 0; i < LSB_SIZE; i = i + 1) begin
+      robId[i]          <= {ROB_WIDTH{1'b0}};
+      baseAddr[i]       <= 32'b0;
+      baseConstrtId[i]  <= {ROB_WIDTH{1'b0}};
+      offset[i]         <= 32'b0;
+      data[i]           <= 32'b0;
+      dataConstrtId[i]  <= {ROB_WIDTH{1'b0}};
+      op[i]             <= {LSB_OP_WIDTH{1'b0}};
+    end
   end else if (clearIn) begin
     for (i = 0; i < LSB_SIZE; i = i + 1) begin
       valid <= ready;
@@ -199,20 +218,19 @@ always @(posedge clockIn) begin
 
     // Memeory access
     if (readyForNext) begin
-      case (topOp)
-        3'b000: dataOutReg <= signedByte;
-        3'b001: dataOutReg <= signedHW;
-        3'b010: dataOutReg <= topData; // Word
-        3'b011: dataOutReg <= topData;
-        3'b100: dataOutReg <= topData;
-      endcase
+      dataOutReg     <= topData;
       accessTypeReg  <= topAccessType;
       readWriteReg   <= topReadWrite;
       dataAddrReg    <= topAddr;
       updateRobIdReg <= topRobId;
       beginIndex     <= beginIndex + 1;
+      processing     <= 1'b1;
+      processOpReg   <= topOp;
     end else begin
       accessTypeReg <= 2'b00;
+      if (dataValid || dataWriteSuc) begin
+        processing <= 1'b0;
+      end
     end
   end
 end
