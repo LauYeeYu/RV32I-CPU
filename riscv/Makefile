@@ -19,6 +19,9 @@ _no_testcase_name_check:
 build_sim:
 	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.v
 
+build_sim_debug:
+	@cd $(src) && iverilog -o $(testspace)/test -DDEBUG $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.v
+
 build_sim_test: _no_testcase_name_check
 	@$(riscv_bin)/riscv32-unknown-elf-as -o $(sys)/rom.o -march=rv32i $(sys)/rom.s
 	@cp $(sim_testcase)/*$(name)*.c $(testspace)/test.c
@@ -34,5 +37,7 @@ clear:
 	@rm $(sys)/rom.o $(testspace)/test*
 
 test_sim: build_sim build_sim_test run_sim
+
+test_sim_debug: build_sim_debug build_sim_test run_sim
 
 .PHONY: _no_testcase_name_check build_sim build_sim_test run_sim clear test_sim

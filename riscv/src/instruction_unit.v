@@ -1,4 +1,6 @@
+`ifdef DEBUG
 `define PRINT_INSTRUCTION_TYPE // Show the information of the instruction on instruction fetch
+`endif
 module InstructionUnit #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,

@@ -1,5 +1,7 @@
+`ifdef DEBUG
 `define PRINT_REG_CHANGE
 `define PRINT_WRONG_BRANCH
+`endif
 module ReorderBuffer #(
   parameter ROB_WIDTH = 4,
   parameter ROB_SIZE = 2**ROB_WIDTH,
