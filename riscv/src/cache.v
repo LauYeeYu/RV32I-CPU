@@ -411,6 +411,7 @@ module Cache #(
           tag        <= dcacheMissAddr;
           memAddrReg <= {dcacheMissAddr, 4'b0000};
         end else begin // write
+          tag        <= dcacheMissAddr;
           buffer     <= dcacheMemDataOut;
           memAddrReg <= 32'b0;
         end
