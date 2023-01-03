@@ -1,4 +1,6 @@
+`ifdef DEBUG
 `define PRINT_RESULT
+`endif
 module LoadStoreBuffer #(
   parameter ROB_WIDTH = 4,
   parameter LSB_WIDTH = 4,
@@ -49,23 +51,21 @@ reg [1:0]           accessTypeReg; // access type (none: 2'b00, byte: 2'b01, hal
 reg                 readWriteReg;  // read/write select (read: 1, write: 0)
 reg [31:0]          dataAddrReg;   // data address
 reg [31:0]          dataOutReg;    // data to write
-reg                 updateReg;
+reg                 processing;    // there is a value to be processed by dcache
 reg [ROB_WIDTH-1:0] updateRobIdReg;
-reg [31:0]          updateValReg;
 
 assign accessType   = accessTypeReg;
 assign readWriteOut = readWriteReg;
 assign dataAddr     = dataAddrReg;
 assign dataOut      = dataOutReg;
-assign lsbUpdate    = updateReg;
+assign lsbUpdate    = dataValid;
 assign lsbRobIndex  = updateRobIdReg;
-assign lsbUpdateVal = updateValReg;
+assign lsbUpdateVal = dataIn;
 
 // FIFO
 reg [LSB_WIDTH-1:0]    beginIndex;
 reg [LSB_WIDTH-1:0]    endIndex;
 reg [LSB_SIZE-1:0]     valid;
-reg [LSB_SIZE-1:0]     sentToDcache;
 reg [LSB_SIZE-1:0]     ready;
 reg [LSB_SIZE-1:0]     readWrite; // 0: write, 1: read
 reg [ROB_WIDTH-1:0]    robId[LSB_SIZE-1:0];
@@ -88,7 +88,6 @@ assign full = (beginIndex == endIndexPlusThree) ||
 
 // Utensils
 wire                    topValid      = (beginIndex != endIndex);
-wire                    topSentToDc   = sentToDcache[beginIndex];
 wire                    topReadWrite  = readWrite[beginIndex];
 wire [ROB_WIDTH-1:0]    topRobId      = robId[beginIndex];
 wire                    topReadyState = ready[beginIndex];
@@ -99,6 +98,8 @@ wire [31:0]             topAddr       = topBaseAddr + topOffset;
 wire                    topDataHasDep = dataHasDep[beginIndex];
 wire [31:0]             topData       = data[beginIndex];
 wire [LSB_OP_WIDTH-1:0] topOp         = op[beginIndex];
+wire                    lastFinished  = dataValid | dataWriteSuc;
+wire                    readyForNext  = topValid & topReady & (lastFinished | ~processing);
 
 wire [31:0] signedByte    = {{24{1'b0}}, topData[31], topData[6:0]};
 wire [31:0] signedHW      = {{16{1'b0}}, topData[31], topData[14:0]};
@@ -115,19 +116,17 @@ wire topReady = topBaseHasDep ? 1'b0 :
 
 wire baseHasDepMerged = addBaseHasDep &&
                         !((dataValid && (addBaseConstrtId == updateRobIdReg)) ||
-                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ||
-                          (updateReg && (addBaseConstrtId == updateRobIdReg)));
+                          (rsUpdate && (addBaseConstrtId == rsRobIndex)));
 wire dataHasDepMerged = addDataHasDep &&
                         !((dataValid && (addDataConstrtId == updateRobIdReg)) ||
-                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ||
-                          (updateReg && (addDataConstrtId == updateRobIdReg)));
+                          (rsUpdate && (addDataConstrtId == rsRobIndex)));
 wire [31:0] base1Merged = addBaseHasDep ?
                           (dataValid && (addDataConstrtId == updateRobIdReg)) ? dataIn :
-                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : updateValReg :
+                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
                           addBase;
 wire [31:0] data1Merged = addDataHasDep ?
                           (dataValid && (addBaseConstrtId == updateRobIdReg)) ? dataIn :
-                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : updateValReg :
+                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
                           addData;
 
 integer i;
@@ -146,9 +145,8 @@ always @(posedge clockIn) begin
     beginIndex     <= {LSB_WIDTH{1'b0}};
     endIndex       <= {LSB_WIDTH{1'b0}};
     valid          <= {LSB_SIZE{1'b0}};
-    updateReg      <= 1'b0;
     updateRobIdReg <= {ROB_WIDTH{1'b0}};
-    updateValReg   <= 32'b0;
+    processing     <= 1'b0;
   end else if (clearIn) begin
     for (i = 0; i < LSB_SIZE; i = i + 1) begin
       valid <= ready;
@@ -185,7 +183,6 @@ always @(posedge clockIn) begin
     // Add new data to the buffer
     if (addValid) begin
       valid        [endIndex] <= 1'b1;
-      sentToDcache [endIndex] <= 1'b0;
       ready        [endIndex] <= 1'b0; // No need to check whether the ready state is 1 or 0
       readWrite    [endIndex] <= addReadWrite;
       robId        [endIndex] <= addRobId;
@@ -201,49 +198,21 @@ always @(posedge clockIn) begin
     end
 
     // Memeory access
-    updateReg <= dataValid;
-    updateValReg <= dataIn;
-    if (topValid) begin
-      if (valid[beginIndex]) begin
-        if (topReady) begin
-          if (topSentToDc) begin
-            accessTypeReg <= 2'b00;
-            if (topReadWrite) begin // read
-              if (dataValid) begin
-`ifdef PRINT_RESULT
-                $display("LSB: Read data, at 0x%h, value 0x%h", topAddr, dataIn);
-`endif
-                beginIndex <= beginIndex + 1;
-              end
-            end else begin // write
-              if (dataWriteSuc) begin
-`ifdef PRINT_RESULT
-                $display("LSB: Write data, at 0x%h, value 0x%h", topAddr, topData);
-`endif
-                beginIndex <= beginIndex + 1;
-              end
-            end
-          end else begin
-            case (topOp)
-              3'b000: dataOutReg <= signedByte;
-              3'b001: dataOutReg <= signedHW;
-              3'b010: dataOutReg <= topData; // Word
-              3'b011: dataOutReg <= topData;
-              3'b100: dataOutReg <= topData;
-            endcase
-            accessTypeReg  <= topAccessType;
-            readWriteReg   <= topReadWrite;
-            dataAddrReg    <= topAddr;
-            updateRobIdReg <= topRobId;
-            sentToDcache[beginIndex] <= 1'b1;
-          end
-        end else begin
-          accessTypeReg <= 2'b00;
-        end
-      end else begin
+    if (readyForNext) begin
+      case (topOp)
+        3'b000: dataOutReg <= signedByte;
+        3'b001: dataOutReg <= signedHW;
+        3'b010: dataOutReg <= topData; // Word
+        3'b011: dataOutReg <= topData;
+        3'b100: dataOutReg <= topData;
+      endcase
+      accessTypeReg  <= topAccessType;
+      readWriteReg   <= topReadWrite;
+      dataAddrReg    <= topAddr;
+      updateRobIdReg <= topRobId;
+      beginIndex     <= beginIndex + 1;
+    end else begin
       accessTypeReg <= 2'b00;
-      beginIndex <= beginIndex + 1;
-      end
     end
   end
 end
