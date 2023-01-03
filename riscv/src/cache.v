@@ -133,14 +133,15 @@ module Cache #(
   // ICache and DCache control logic
   always @(posedge clkIn) begin
     if (resetIn) begin
-      loading           <= 0;
-      resultReady       <= 0;
-      readWrite         <= 1;
-      idle              <= 1;
-      progress          <= 0;
-      mutableReady      <= 0;
-      memReadWrite      <= 1;
-      accessTypeReg     <= 2'b00;
+      loading              <= 0;
+      resultReady          <= 0;
+      readWrite            <= 1;
+      idle                 <= 1;
+      progress             <= 0;
+      mutableReady         <= 0;
+      memReadWrite         <= 1;
+      accessTypeReg        <= 2'b00;
+      dcacheMutableInValid <= 0;
     end else begin
       // If the memory has already been loaded
       if (resultReady) begin
@@ -384,8 +385,13 @@ module Cache #(
           2'b11: begin
             mutableReady   <= 1;
             mutableLoading <= 0;
-            if (readWriteReg) dataReg[23:16] <= memIn;
-            else              memOutReg      <= dataReg[31:24];
+            if (readWriteReg) begin
+              dataReg[23:16] <= memIn;
+              memAddrReg     <= 32'b0;
+            end else begin
+              memOutReg  <= dataReg[31:24];
+              memAddrReg <= dataAddrReg + 4;
+            end
           end
         endcase
       end else if (mutableAddr && !mutableReady) begin
@@ -405,7 +411,8 @@ module Cache #(
           tag        <= dcacheMissAddr;
           memAddrReg <= {dcacheMissAddr, 4'b0000};
         end else begin // write
-          buffer <= dcacheMemDataOut;
+          buffer     <= dcacheMemDataOut;
+          memAddrReg <= 32'b0;
         end
       end else if (icacheMiss) begin
         acceptWriteReg    <= 0;
@@ -417,6 +424,7 @@ module Cache #(
         memAddrReg        <= {instrAddrIn[31:BLOCK_WIDTH], 4'b0000};
       end else begin
         acceptWriteReg <= 0;
+        memAddrReg     <= 32'b0;
       end
     end
   end

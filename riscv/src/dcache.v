@@ -41,7 +41,7 @@ reg                  outRegWriteSuc;
 assign dataOut      = mutableAddr ? mutableMemDataIn : outReg;
 assign dataOutValid = outValidReg | mutableMemInValid;
 assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
-assign miss         = needWriteBack | needLoad;
+assign miss         = (needWriteBack | needLoad) & ~mutableAddr;
 assign missAddr     = needWriteBack ? writeBackTag : loadTag;
 assign readWriteOut = ~needWriteBack;
 
@@ -61,7 +61,7 @@ wire [CACHE_WIDTH-1:0] memPos      = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDT
 wire hit           = cacheValid[dataPos] && (cacheTag[dataPos] == dataTag);
 wire nextHit       = cacheValid[nextDataPos] && (cacheTag[nextDataPos] == nextDataTag);
 wire blockPos      = dataAddrReg[BLOCK_WIDTH-1:0];
-wire mutableAddr   = (accessTypeReg != 2'b00) && (dataAddrReg[17:16] == 2'b11);
+wire mutableAddr   = (accessTypeReg == 2'b00) ? 1'b0 : (dataAddrReg[17:16] == 2'b11);
 wire nextLineUsed  = (accessTypeReg == 2'b11) ? dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 4 :
                      (accessTypeReg == 2'b10) ? dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 2 : 1'b0;
 wire lineDirty     = cacheDirty[dataPos];
