@@ -170,6 +170,9 @@ always @(posedge clockIn) begin
     for (i = 0; i < LSB_SIZE; i = i + 1) begin
       valid <= ready;
     end
+    if (processing && ((readWriteReg == 1) || dataWriteSuc)) begin
+      processing <= 1'b0;
+    end
   end else begin
     // Handle the update data from the reservation station
     if (rsUpdate) begin
