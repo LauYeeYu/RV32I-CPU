@@ -51,19 +51,19 @@ reg [31:0] dataAddrReg;
 reg [31:0] dataReg;
 reg        readWriteReg;
 
-wire                   onLastLine  = dataAddrReg[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == CACHE_SIZE - 1;
+wire                   onLastLine  = (dataAddrReg[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == (CACHE_SIZE - 1));
 wire [31:CACHE_WIDTH]  dataTag     = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH];
 wire [31:CACHE_WIDTH]  nextDataTag = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
 wire [CACHE_WIDTH-1:0] dataPos     = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:0] nextDataPos = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH] + 1;
 wire [CACHE_WIDTH-1:0] memPos      = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
+wire [BLOCK_WIDTH-1:0] blockPos    = dataAddrReg[BLOCK_WIDTH-1:0];
 
 wire hit           = cacheValid[dataPos] && (cacheTag[dataPos] == dataTag);
 wire nextHit       = cacheValid[nextDataPos] && (cacheTag[nextDataPos] == nextDataTag);
-wire blockPos      = dataAddrReg[BLOCK_WIDTH-1:0];
 wire mutableAddr   = (accessTypeReg == 2'b00) ? 1'b0 : (dataAddrReg[17:16] == 2'b11);
-wire nextLineUsed  = (accessTypeReg == 2'b11) ? dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 4 :
-                     (accessTypeReg == 2'b10) ? dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 2 : 1'b0;
+wire nextLineUsed  = (accessTypeReg == 2'b11) ? (dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 4) :
+                     (accessTypeReg == 2'b10) ? (dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 2) : 1'b0;
 wire lineDirty     = cacheDirty[dataPos];
 wire nextLineDirty = cacheDirty[nextDataPos];
 wire needWriteBack = (!mutableAddr && (accessTypeReg != 2'b00)) &&
