@@ -113,7 +113,7 @@ wire [1:0]  topAccessType = topOp == 3'b000 ? 2'b01 : // Byte
                                               2'b10;  // Half Word;
 
 wire isIoAddr = (topAddr[17:16] == 2'b11);
-wire topReady = topBaseHasDep ? 1'b0 :
+wire topReady = (!valid[beginIndex] || topBaseHasDep) ? 1'b0 :
                 topReadWrite  ? isIoAddr ? topReadyState : 1'b1 // read
                               : topReadyState & ~topDataHasDep; // write
 
