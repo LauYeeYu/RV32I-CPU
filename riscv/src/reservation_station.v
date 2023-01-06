@@ -27,7 +27,7 @@ module ReservationStation #(
   input  wire [31:0]          lsbUpdateVal  // load & store buffer value
 );
 
-parameter SUPPORTED_OPS = 12;
+parameter SUPPORTED_OPS = 14;
 
 parameter ADD = 4'b0000;
 parameter SUB = 4'b0001;
@@ -41,6 +41,8 @@ parameter EQ  = 4'b1000;
 parameter NE  = 4'b1001;
 parameter LT  = 4'b1010;
 parameter LTU = 4'b1011;
+parameter GE  = 4'b1100;
+parameter GEU = 4'b1101;
 
 // ALU section
 reg                    calculating;
@@ -64,6 +66,8 @@ assign aluResult[EQ]  = v1Cal  == v2Cal ? 32'b1 : 32'b0;
 assign aluResult[NE]  = v1Cal  != v2Cal ? 32'b1 : 32'b0;
 assign aluResult[LT]  = $signed(v1Cal) < $signed(v2Cal) ? 32'b1 : 32'b0;
 assign aluResult[LTU] = v1Cal < v2Cal ? 32'b1 : 32'b0;
+assign aluResult[GE]  = $signed(v1Cal) >= $signed(v2Cal) ? 32'b1 : 32'b0;
+assign aluResult[GEU] = v1Cal >= v2Cal ? 32'b1 : 32'b0;
 
 // Reservation Station section
 reg                 updateValidReg;

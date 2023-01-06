@@ -8,24 +8,24 @@ logical right shift and arithmetic right shift), 4 comparison operations
 operation).
 
 ## Reservation Station Operators
-| num | binary  |        operator        | abbr |
-|:---:|:-------:|:----------------------:|:----:|
-|  0  | `0000`  |          add           | ADD  |
-|  1  | `0001`  |          sub           | SUB  |
-|  2  | `0010`  |          xor           | XOR  |
-|  3  | `0011`  |           or           |  OR  |
-|  4  | `0100`  |          and           | AND  |
-|  5  | `0101`  |   shift left logical   | SLL  |
-|  6  | `0110`  |  shift right logical   | SRL  |
-|  7  | `0111`  | shift right arithmetic | SRA  |
-|  8  | `1000`  |         equal          |  EQ  |
-|  9  | `1001`  |       not equal        |  NE  |
-| 10  | `1010`  |       less than        |  LT  |
-| 11  | `1011`  |   less than unsigned   | LTU  |
-| 12  | `1100`  |        reserved        |  -   |
-| 13  | `1101`  |        reserved        |  -   |
-| 14  | `1110`  |        reserved        |  -   |
-| 15  | `1111`  |        reserved        |  -   |
+| num | binary  |            operator             | abbr |
+|:---:|:-------:|:-------------------------------:|:----:|
+|  0  | `0000`  |               add               | ADD  |
+|  1  | `0001`  |               sub               | SUB  |
+|  2  | `0010`  |               xor               | XOR  |
+|  3  | `0011`  |               or                |  OR  |
+|  4  | `0100`  |               and               | AND  |
+|  5  | `0101`  |       shift left logical        | SLL  |
+|  6  | `0110`  |       shift right logical       | SRL  |
+|  7  | `0111`  |     shift right arithmetic      | SRA  |
+|  8  | `1000`  |              equal              |  EQ  |
+|  9  | `1001`  |            not equal            |  NE  |
+| 10  | `1010`  |            less than            |  LT  |
+| 11  | `1011`  |       less than unsigned        | LTU  |
+| 12  | `1100`  |     greater than and equal      |  GE  |
+| 13  | `1101`  | greater than and equal unsigned | GEU  |
+| 14  | `1110`  |            reserved             |  -   |
+| 15  | `1111`  |            reserved             |  -   |
 
 ## Reservation Station Module
 

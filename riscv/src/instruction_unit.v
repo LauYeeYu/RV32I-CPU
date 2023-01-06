@@ -345,13 +345,13 @@ always @(posedge clockIn) begin
               rsAddConstrt2Reg <= rs2Dependency;
             end
             3'b101: begin // BGE
-              rsAddOpReg <= 4'b1010; // LT (swap the operands)
-              rsAddHasDep1Reg  <= rs2Constraint;
-              rsAddHasDep2Reg  <= rs1Constraint;
-              rsAddVal1Reg     <= rs2RealValue;
-              rsAddVal2Reg     <= rs1RealValue;
-              rsAddConstrt1Reg <= rs2Dependency;
-              rsAddConstrt2Reg <= rs1Dependency;
+              rsAddOpReg <= 4'b1100; // GE
+              rsAddHasDep1Reg  <= rs1Constraint;
+              rsAddHasDep2Reg  <= rs2Constraint;
+              rsAddVal1Reg     <= rs1RealValue;
+              rsAddVal2Reg     <= rs2RealValue;
+              rsAddConstrt1Reg <= rs1Dependency;
+              rsAddConstrt2Reg <= rs2Dependency;
             end
             3'b110: begin // BLTU
               rsAddOpReg       <= 4'b1011; // LTU
@@ -363,13 +363,13 @@ always @(posedge clockIn) begin
               rsAddConstrt2Reg <= rs2Dependency;
             end
             3'b111: begin // BGEU
-              rsAddOpReg <= 4'b1011; // LTU (swap the operands)
-              rsAddHasDep1Reg  <= rs2Constraint;
-              rsAddHasDep2Reg  <= rs1Constraint;
-              rsAddVal1Reg     <= rs2RealValue;
-              rsAddVal2Reg     <= rs1RealValue;
-              rsAddConstrt1Reg <= rs2Dependency;
-              rsAddConstrt2Reg <= rs1Dependency;
+              rsAddOpReg <= 4'b1101; // GEU
+              rsAddHasDep1Reg  <= rs1Constraint;
+              rsAddHasDep2Reg  <= rs2Constraint;
+              rsAddVal1Reg     <= rs1RealValue;
+              rsAddVal2Reg     <= rs2RealValue;
+              rsAddConstrt1Reg <= rs1Dependency;
+              rsAddConstrt2Reg <= rs2Dependency;
             end
           endcase
         end
