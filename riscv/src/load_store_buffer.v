@@ -123,14 +123,14 @@ wire baseHasDepMerged = addBaseHasDep &&
 wire dataHasDepMerged = addDataHasDep &&
                         !((dataValid && (addDataConstrtId == updateRobIdReg)) ||
                           (rsUpdate && (addDataConstrtId == rsRobIndex)));
-wire [31:0] base1Merged = addBaseHasDep ?
-                          (dataValid && (addDataConstrtId == updateRobIdReg)) ? dataIn :
-                          (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
-                          addBase;
-wire [31:0] data1Merged = addDataHasDep ?
-                          (dataValid && (addBaseConstrtId == updateRobIdReg)) ? dataIn :
-                          (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
-                          addData;
+wire [31:0] baseMerged = addBaseHasDep ?
+                         (dataValid && (addBaseConstrtId == updateRobIdReg)) ? dataIn :
+                         (rsUpdate && (addBaseConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
+                         addBase;
+wire [31:0] dataMerged = addDataHasDep ?
+                         (dataValid && (addDataConstrtId == updateRobIdReg)) ? dataIn :
+                         (rsUpdate && (addDataConstrtId == rsRobIndex)) ? rsUpdateVal : 32'b0 :
+                         addData;
 
 integer i;
 always @* begin
@@ -209,11 +209,11 @@ always @(posedge clockIn) begin
       readWrite    [endIndex] <= addReadWrite;
       robId        [endIndex] <= addRobId;
       baseHasDep   [endIndex] <= baseHasDepMerged;
-      baseAddr     [endIndex] <= base1Merged;
+      baseAddr     [endIndex] <= baseMerged;
       baseConstrtId[endIndex] <= addBaseConstrtId;
       offset       [endIndex] <= addOffset;
       dataHasDep   [endIndex] <= dataHasDepMerged;
-      data         [endIndex] <= data1Merged;
+      data         [endIndex] <= dataMerged;
       dataConstrtId[endIndex] <= addDataConstrtId;
       op           [endIndex] <= addOp;
       endIndex <= endIndex + 1;
