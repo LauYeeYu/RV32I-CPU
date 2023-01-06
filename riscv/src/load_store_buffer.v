@@ -221,20 +221,24 @@ always @(posedge clockIn) begin
 
     // Memeory access
     if (readyForNext) begin
-      dataOutReg     <= topData;
-      accessTypeReg  <= topAccessType;
-      readWriteReg   <= topReadWrite;
-      dataAddrReg    <= topAddr;
-      updateRobIdReg <= topRobId;
-      beginIndex     <= beginIndex + 1;
-      processing     <= 1'b1;
-      processOpReg   <= topOp;
+      dataOutReg        <= topData;
+      accessTypeReg     <= topAccessType;
+      readWriteReg      <= topReadWrite;
+      dataAddrReg       <= topAddr;
+      updateRobIdReg    <= topRobId;
+      beginIndex        <= beginIndex + 1;
+      processing        <= 1'b1;
+      processOpReg      <= topOp;
+      ready[beginIndex] <= 1'b0;
     end else begin
       accessTypeReg <= 2'b00;
       if (dataValid || dataWriteSuc) begin
         processing <= 1'b0;
       end
-      if (!valid[beginIndex]) beginIndex <= beginIndex + 1;
+      if (topValid && !valid[beginIndex]) begin
+        ready[beginIndex] <= 1'b1;
+        beginIndex <= beginIndex + 1;
+      end
     end
   end
 end
