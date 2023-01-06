@@ -122,10 +122,8 @@ always @(posedge clkIn) begin
   end else begin
     outValidReg    <= outValid;
     outRegWriteSuc <= outRegWrite;
-    if (outValid || outRegWrite) begin
-      accessTypeReg  <= 2'b00;
-    end
     if (ready) begin
+      accessTypeReg  <= 2'b00;
       case (accessTypeReg)
         2'b01: begin // byte
           if (readWriteReg) begin
@@ -213,11 +211,9 @@ always @(posedge clkIn) begin
               4'b1101: cacheData[dataPos][119:104] <= dataReg[15:0];
               4'b1110: cacheData[dataPos][127:112] <= dataReg[15:0];
               4'b1111: begin
-                if (nextHit) begin
-                  cacheData[dataPos][128:120]  <= dataReg[15:0];
-                  cacheData[nextDataPos][15:0] <= dataReg[31:16];
-                  cacheDirty[nextDataPos]      <= 1;
-                end
+                cacheData[dataPos][127:120] <= dataReg[7:0];
+                cacheData[nextDataPos][7:0] <= dataReg[15:8];
+                cacheDirty[nextDataPos]     <= 1;
               end
             endcase
           end
@@ -262,25 +258,19 @@ always @(posedge clkIn) begin
               4'b1011: cacheData[dataPos][119:88]  <= dataReg[31:0];
               4'b1100: cacheData[dataPos][127:96]  <= dataReg[31:0];
               4'b1101: begin
-                if (nextHit) begin
-                  cacheData[dataPos][127:104] <= dataReg[31:0];
-                  cacheData[nextDataPos][7:0] <= dataReg[39:32];
-                  cacheDirty[nextDataPos]     <= 1;
-                end
+                cacheData[dataPos][127:104] <= dataReg[23:0];
+                cacheData[nextDataPos][7:0] <= dataReg[31:24];
+                cacheDirty[nextDataPos]     <= 1;
               end
               4'b1110: begin
-                if (nextHit) begin
-                  cacheData[dataPos][127:112]  <= dataReg[31:0];
-                  cacheData[nextDataPos][15:0] <= dataReg[39:32];
-                  cacheDirty[nextDataPos]      <= 1;
-                end
+                cacheData[dataPos][127:112]  <= dataReg[15:0];
+                cacheData[nextDataPos][15:0] <= dataReg[31:16];
+                cacheDirty[nextDataPos]      <= 1;
               end
               4'b1111: begin
-                if (nextHit) begin
-                  cacheData[dataPos][127:120]  <= dataReg[31:0];
-                  cacheData[nextDataPos][23:0] <= dataReg[39:32];
-                  cacheDirty[nextDataPos]      <= 1;
-                end
+                cacheData[dataPos][127:120]  <= dataReg[7:0];
+                cacheData[nextDataPos][23:0] <= dataReg[31:8];
+                cacheDirty[nextDataPos]      <= 1;
               end
             endcase
           end
