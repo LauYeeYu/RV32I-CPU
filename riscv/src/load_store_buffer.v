@@ -234,6 +234,7 @@ always @(posedge clockIn) begin
       if (dataValid || dataWriteSuc) begin
         processing <= 1'b0;
       end
+      if (!valid[beginIndex]) beginIndex <= beginIndex + 1;
     end
   end
 end
