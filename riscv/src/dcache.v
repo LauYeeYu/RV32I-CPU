@@ -189,7 +189,7 @@ always @(posedge clkIn) begin
               4'b1100: outReg <= {16'b0, cacheData[dataPos][111:96]};
               4'b1101: outReg <= {16'b0, cacheData[dataPos][119:104]};
               4'b1110: outReg <= {16'b0, cacheData[dataPos][127:112]};
-              4'b1111: outReg <= {16'b0, cacheData[nextDataPos][15:0], cacheData[dataPos][128:120]};
+              4'b1111: outReg <= {16'b0, cacheData[nextDataPos][7:0], cacheData[dataPos][127:120]};
             endcase
           end else begin
             // write
