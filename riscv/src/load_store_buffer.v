@@ -53,6 +53,7 @@ reg [31:0]             dataAddrReg;   // data address
 reg [31:0]             dataOutReg;    // data to write
 reg                    processing;    // there is a value to be processed by dcache
 reg [ROB_WIDTH-1:0]    updateRobIdReg;
+reg [ROB_WIDTH-1:0]    nextRobIdReg;
 reg [LSB_OP_WIDTH-1:0] processOpReg;
 
 assign accessType   = accessTypeReg;
@@ -220,12 +221,13 @@ always @(posedge clockIn) begin
     end
 
     // Memeory access
+    updateRobIdReg <= nextRobIdReg;
     if (readyForNext) begin
       dataOutReg        <= topData;
       accessTypeReg     <= topAccessType;
       readWriteReg      <= topReadWrite;
       dataAddrReg       <= topAddr;
-      updateRobIdReg    <= topRobId;
+      nextRobIdReg      <= topRobId;
       beginIndex        <= beginIndex + 1;
       processing        <= 1'b1;
       processOpReg      <= topOp;
