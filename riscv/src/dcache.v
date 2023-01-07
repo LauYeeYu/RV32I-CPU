@@ -52,12 +52,12 @@ reg [31:0] dataReg;
 reg        readWriteReg;
 
 wire                   onLastLine  = (dataAddrReg[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == (CACHE_SIZE - 1));
-wire [31:CACHE_WIDTH]  dataTag     = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH];
-wire [31:CACHE_WIDTH]  nextDataTag = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
 wire [CACHE_WIDTH-1:0] dataPos     = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:0] nextDataPos = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH] + 1;
 wire [CACHE_WIDTH-1:0] memPos      = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [BLOCK_WIDTH-1:0] blockPos    = dataAddrReg[BLOCK_WIDTH-1:0];
+wire [31:CACHE_WIDTH+BLOCK_WIDTH] dataTag     = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH];
+wire [31:CACHE_WIDTH+BLOCK_WIDTH] nextDataTag = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
 
 wire hit           = cacheValid[dataPos] && (cacheTag[dataPos] == dataTag);
 wire nextHit       = cacheValid[nextDataPos] && (cacheTag[nextDataPos] == nextDataTag);
@@ -92,7 +92,7 @@ always @* begin
     cacheValid[memPos] <= 1;
     cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
     cacheData [memPos] <= memDataIn;
-    cacheDirty[memPos] <= 0;
+    if (readWriteReg) cacheDirty[memPos] <= 0;
   end
   if (acceptWrite) begin
     cacheDirty[memPos] <= 0;

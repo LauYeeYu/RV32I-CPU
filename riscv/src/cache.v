@@ -355,7 +355,6 @@ module Cache #(
         endcase
       end else if (idle) begin
         idle           <= 0;
-        acceptWriteReg <= 0;
       end else if (mutableLoading) begin
         case (mutableProgress)
           2'b00: begin
@@ -406,7 +405,6 @@ module Cache #(
         fromICache        <= 0;
         loading           <= 1;
         progress          <= 0;
-        acceptWriteReg    <= ~dcacheReadWriteOut;
         if (dcacheReadWriteOut) begin // read
           tag        <= dcacheMissAddr;
           memAddrReg <= {dcacheMissAddr, 4'b0000};
@@ -416,7 +414,6 @@ module Cache #(
           memAddrReg <= 32'b0;
         end
       end else if (icacheMiss) begin
-        acceptWriteReg    <= 0;
         readWrite         <= 1; // read
         fromICache        <= 1;
         loading           <= 1;
@@ -424,7 +421,6 @@ module Cache #(
         tag               <= instrAddrIn[31:BLOCK_WIDTH];
         memAddrReg        <= {instrAddrIn[31:BLOCK_WIDTH], 4'b0000};
       end else begin
-        acceptWriteReg <= 0;
         memAddrReg     <= 32'b0;
       end
     end
