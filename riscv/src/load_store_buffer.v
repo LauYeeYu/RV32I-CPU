@@ -1,5 +1,5 @@
 `ifdef DEBUG
-`define PRINT_RESULT
+//`define PRINT_RESULT
 `endif
 module LoadStoreBuffer #(
   parameter ROB_WIDTH = 4,
@@ -175,6 +175,7 @@ always @(posedge clockIn) begin
     if (processing && ((readWriteReg == 1) || dataWriteSuc)) begin
       processing <= 1'b0;
     end
+    accessTypeReg <= 2'b00;
   end else if (readyIn) begin
     // Handle the update data from the reservation station
     if (rsUpdate) begin
