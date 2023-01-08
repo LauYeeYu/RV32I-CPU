@@ -24,6 +24,18 @@ module Cache #(
   output wire        dataWriteSuc   // data write success signal (Load Store Buffer)
 );
 
+  // Buffer
+  reg                    loading;
+  reg                    resultReady;
+  reg                    readWrite; // 1: read, 0: write
+  reg                    idle;
+  reg                    idleAgain;
+  reg [31:BLOCK_WIDTH]   tag;
+  reg [BLOCK_SIZE*8-1:0] buffer;
+  reg [BLOCK_WIDTH-1:0]  progress;
+  reg                    fromICache; // DCache: 0, ICache: 1
+  reg                    acceptWriteReg;
+
   // Mem regs
   reg        memReadWrite;
   reg [7:0]  memOutReg;
@@ -51,35 +63,21 @@ module Cache #(
   reg                     dcacheMutableInValid;
   reg                     dcacheMutableWriteSuc;
 
-  // Buffer
-  reg                    loading;
-  reg                    resultReady;
-  reg                    readWrite; // 1: read, 0: write
-  reg                    idle;
-  reg [31:BLOCK_WIDTH]   tag;
-  reg [BLOCK_SIZE*8-1:0] buffer;
-  reg [BLOCK_WIDTH-1:0]  progress;
-  reg                    fromICache; // DCache: 0, ICache: 1
-  reg                    acceptWriteReg;
-
   // Mutable memory
   reg [1:0]  accessTypeReg;
   reg [31:0] dataAddrReg;
   reg [31:0] dataReg;
   reg        readWriteReg;
+
+  wire [1:0]  accessTypeMerged = (accessType != 2'b00) ? accessType : accessTypeReg;
+  wire [31:0] dataAddrMerged   = (accessType != 2'b00) ? dataAddrIn : dataAddrReg;
+  wire [31:0] dataMerged       = (accessType != 2'b00) ? dataIn     : dataReg;
+  wire        readWriteMerged  = (accessType != 2'b00) ? readWriteIn : readWriteReg;
+
   reg        mutableReady;
   reg        mutableLoading;
   reg [1:0]  mutableProgress;
-  wire mutableAddr = (accessTypeReg != 2'b00) && (dataAddrReg[17:16] == 2'b11);
-
-  always @* begin
-    if (accessType != 2'b00) begin
-      dataAddrReg   <= dataAddrIn;
-      accessTypeReg <= accessType;
-      dataReg       <= dataIn;
-      readWriteReg  <= readWriteIn;
-    end
-  end
+  wire mutableAddr = (accessTypeMerged != 2'b00) && (dataAddrMerged[17:16] == 2'b11);
 
   ICache #(
     .BLOCK_WIDTH (BLOCK_WIDTH),
@@ -138,13 +136,25 @@ module Cache #(
       loading              <= 0;
       resultReady          <= 0;
       readWrite            <= 1;
-      idle                 <= 1;
+      idle                 <= 0;
+      idleAgain            <= 0;
       progress             <= 0;
       mutableReady         <= 0;
       memReadWrite         <= 1;
-      accessTypeReg        <= 2'b00;
       dcacheMutableInValid <= 0;
-    end else begin
+      dataAddrReg          <= 32'b0;
+      accessTypeReg        <= 2'b00;
+      dataReg              <= 32'b0;
+      readWriteReg         <= 1'b0;
+      tag                  <= {(31-BLOCK_WIDTH){1'b0}};
+    end else if (readyIn) begin
+      if (accessType != 2'b00) begin
+        dataAddrReg   <= dataAddrIn;
+        accessTypeReg <= accessType;
+        dataReg       <= dataIn;
+        readWriteReg  <= readWriteIn;
+      end
+
       // If the memory has already been loaded
       if (resultReady) begin
         buffer[BLOCK_SIZE*8-1:BLOCK_SIZE*8-8] <= memIn;
@@ -167,9 +177,9 @@ module Cache #(
       end
 
       if (mutableReady) begin
-        if (readWriteReg) begin // read
+        if (readWriteMerged) begin // read
           dcacheMutableInValid <= 1;
-          case (accessTypeReg)
+          case (accessTypeMerged)
             2'b01: dataReg[7:0]   <= memIn; // Byte
             2'b10: dataReg[15:8]  <= memIn; // Halfword
             2'b11: dataReg[31:24] <= memIn; // Word
@@ -177,9 +187,9 @@ module Cache #(
         end else begin // write
           dcacheMutableWriteSuc <= 1;
         end
-        accessTypeReg <= 2'b00;
         mutableReady  <= 0;
         memReadWrite  <= 1;
+        accessTypeReg <= 2'b00;
       end else begin
         dcacheMutableInValid  <= 0;
         dcacheMutableWriteSuc <= 0;
@@ -356,52 +366,57 @@ module Cache #(
           end
         endcase
       end else if (idle) begin
-        idle           <= 0;
+        if (idleAgain) begin
+          idle <= 0;
+          idleAgain <= 0;
+        end else begin
+          idleAgain <= 1;
+        end
       end else if (mutableLoading) begin
         case (mutableProgress)
           2'b00: begin
-            memAddrReg <= dataAddrReg + 1;
+            memAddrReg <= dataAddrMerged + 1;
             mutableProgress <= 2'b01;
-            if (accessTypeReg == 2'b01) begin
+            if (accessTypeMerged == 2'b01) begin
               mutableReady   <= 1;
               mutableLoading <= 0;
             end
           end
           2'b01: begin
-            memAddrReg      <= dataAddrReg + 2;
+            memAddrReg      <= dataAddrMerged + 2;
             mutableProgress <= 2'b10;
-            if (readWriteReg) dataReg[7:0] <= memIn;
-            else              memOutReg    <= dataReg[15:8];
-            if (accessTypeReg == 2'b10) begin
+            if (readWriteMerged) dataReg[7:0] <= memIn;
+            else              memOutReg    <= dataMerged[15:8];
+            if (accessTypeMerged == 2'b10) begin
               mutableReady   <= 1;
               mutableLoading <= 0;
             end
           end
           2'b10: begin
-            memAddrReg      <= dataAddrReg + 3;
+            memAddrReg      <= dataAddrMerged + 3;
             mutableProgress <= 2'b11;
-            if (readWriteReg) dataReg[15:8] <= memIn;
-            else              memOutReg     <= dataReg[23:16];
+            if (readWriteMerged) dataReg[15:8] <= memIn;
+            else              memOutReg     <= dataMerged[23:16];
           end
           2'b11: begin
             mutableReady   <= 1;
             mutableLoading <= 0;
-            if (readWriteReg) begin
+            if (readWriteMerged) begin
               dataReg[23:16] <= memIn;
               memAddrReg     <= 32'b0;
             end else begin
-              memOutReg  <= dataReg[31:24];
-              memAddrReg <= dataAddrReg + 4;
+              memOutReg  <= dataMerged[31:24];
+              memAddrReg <= dataAddrMerged + 4;
             end
           end
         endcase
       end else if (mutableAddr && !mutableReady) begin
-        mutableProgress <= readWriteReg ? 2'b00 : 2'b01;
-        mutableLoading  <= readWriteReg == 1 || accessTypeReg != 2'b01;
-        mutableReady    <= readWriteReg == 0 && accessTypeReg == 2'b01;
-        memReadWrite    <= readWriteReg;
-        memAddrReg      <= dataAddrReg;
-        if (!readWriteReg) memOutReg  <= dataReg[7:0];
+        mutableProgress <= readWriteMerged ? 2'b00 : 2'b01;
+        mutableLoading  <= readWriteMerged == 1 || accessTypeMerged != 2'b01;
+        mutableReady    <= readWriteMerged == 0 && accessTypeMerged == 2'b01;
+        memReadWrite    <= readWriteMerged;
+        memAddrReg      <= dataAddrMerged;
+        if (!readWriteMerged) memOutReg  <= dataMerged[7:0];
       end else if (dcacheMiss) begin // dcache have the priority to use memory
         readWrite         <= dcacheReadWriteOut;
         fromICache        <= 0;

@@ -33,12 +33,10 @@ assign instrOut      = hit ?
                          (blockPos == 2'b10) ? cacheData[instrPos][95:64] :
                                                cacheData[instrPos][127:96] : 32'b0;
 
-always @(posedge clkIn) begin
-  if (resetIn) cacheValid <= {CACHE_SIZE{1'b0}};
-end
-
 always @* begin
-  if (memDataValid) begin
+  if (resetIn) begin
+  cacheValid <= {CACHE_SIZE{1'b0}};
+  end else if (memDataValid) begin
     cacheValid[memPos] <= 1'b1;
     cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
     cacheData [memPos] <= memDataIn[127:0];

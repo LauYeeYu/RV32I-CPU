@@ -39,66 +39,49 @@ reg [31:0]           outReg;
 reg                  outValidReg;
 reg                  outRegWriteSuc;
 
-assign dataOut      = mutableAddr ? mutableMemDataIn : outReg;
-assign dataOutValid = outValidReg | mutableMemInValid;
-assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
-assign miss         = (needWriteBack | needLoad) & ~mutableAddr & (accessTypeReg != 2'b00);
-assign missAddr     = needWriteBack ? writeBackTag : loadTag;
-assign readWriteOut = ~needWriteBack;
-
 // Utensils
 reg [1:0]  accessTypeReg;
 reg [31:0] dataAddrReg;
 reg [31:0] dataReg;
 reg        readWriteReg;
+wire [1:0]  accessTypeMerged = (accessType != 2'b00) ? accessType : accessTypeReg;
+wire [31:0] dataAddrMerged   = (accessType != 2'b00) ? dataAddrIn : dataAddrReg;
+wire [31:0] dataMerged       = (accessType != 2'b00) ? dataIn     : dataReg;
+wire        readWriteMerged  = (accessType != 2'b00) ? readWriteIn : readWriteReg;
 
-wire                   onLastLine  = (dataAddrReg[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == (CACHE_SIZE - 1));
-wire [CACHE_WIDTH-1:0] dataPos     = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
-wire [CACHE_WIDTH-1:0] nextDataPos = dataAddrReg[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH] + 1;
+assign dataOut      = mutableAddr ? mutableMemDataIn : outReg;
+assign dataOutValid = outValidReg | mutableMemInValid;
+assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
+assign miss         = (needWriteBack | needLoad) & ~mutableAddr & (accessTypeMerged != 2'b00);
+assign missAddr     = needWriteBack ? writeBackTag : loadTag;
+assign readWriteOut = ~needWriteBack;
+
+wire                   onLastLine  = (dataAddrMerged[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == (CACHE_SIZE - 1));
+wire [CACHE_WIDTH-1:0] dataPos     = dataAddrMerged[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
+wire [CACHE_WIDTH-1:0] nextDataPos = dataAddrMerged[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH] + 1;
 wire [CACHE_WIDTH-1:0] memPos      = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
-wire [BLOCK_WIDTH-1:0] blockPos    = dataAddrReg[BLOCK_WIDTH-1:0];
-wire [31:CACHE_WIDTH+BLOCK_WIDTH] dataTag     = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH];
-wire [31:CACHE_WIDTH+BLOCK_WIDTH] nextDataTag = dataAddrReg[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
+wire [BLOCK_WIDTH-1:0] blockPos    = dataAddrMerged[BLOCK_WIDTH-1:0];
+wire [31:CACHE_WIDTH+BLOCK_WIDTH] dataTag     = dataAddrMerged[31:CACHE_WIDTH+BLOCK_WIDTH];
+wire [31:CACHE_WIDTH+BLOCK_WIDTH] nextDataTag = dataAddrMerged[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
 
 wire hit           = cacheValid[dataPos] && (cacheTag[dataPos] == dataTag);
 wire nextHit       = cacheValid[nextDataPos] && (cacheTag[nextDataPos] == nextDataTag);
-wire mutableAddr   = (accessTypeReg == 2'b00) ? 1'b0 : (dataAddrReg[17:16] == 2'b11);
-wire nextLineUsed  = (accessTypeReg == 2'b11) ? (dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 4) :
-                     (accessTypeReg == 2'b10) ? (dataAddrReg[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 2) : 1'b0;
-wire lineDirty     = cacheDirty[dataPos];
-wire nextLineDirty = cacheDirty[nextDataPos];
-wire needWriteBack = (!mutableAddr && (accessTypeReg != 2'b00)) &&
+wire mutableAddr   = (accessTypeMerged == 2'b00) ? 1'b0 : (dataAddrMerged[17:16] == 2'b11);
+wire nextLineUsed  = (accessTypeMerged == 2'b11) ? (dataAddrMerged[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 4) :
+                     (accessTypeMerged == 2'b10) ? (dataAddrMerged[BLOCK_WIDTH-1:0] > BLOCK_SIZE - 2) : 1'b0;
+wire lineDirty     = cacheDirty[dataPos] && (!acceptWrite || memPos != dataPos);
+wire nextLineDirty = cacheDirty[nextDataPos] && (!acceptWrite || memPos != nextDataPos);
+wire needWriteBack = (!mutableAddr && (accessTypeMerged != 2'b00)) &&
                      (lineDirty || (nextLineUsed && nextLineDirty)) &&
                      (!hit || (nextLineUsed && !nextHit));
 wire needLoad      = !hit || (nextLineUsed && !nextHit);
 wire [31:BLOCK_WIDTH] writeBackTag = lineDirty ? {cacheTag[dataPos], dataPos} : {cacheTag[nextDataPos], nextDataPos};
 wire [31:BLOCK_WIDTH] loadTag      = hit ? {nextDataTag, nextDataPos} : {dataTag, dataPos};
-wire ready       = hit && (accessTypeReg != 2'b00) && (!nextLineUsed || nextHit); // mutable address cannot hit
-wire outValid    = ready && readWriteReg;
-wire outRegWrite = ready && !readWriteReg;
+wire ready       = hit && (accessTypeMerged != 2'b00) && (!nextLineUsed || nextHit); // mutable address cannot hit
+wire outValid    = ready && readWriteMerged;
+wire outRegWrite = ready && !readWriteMerged;
 
 assign writeBackOut = lineDirty ? cacheData[dataPos] : cacheData[nextDataPos];
-
-always @* begin
-  if (accessType != 2'b00) begin
-    dataAddrReg   <= dataAddrIn;
-    accessTypeReg <= accessType;
-    dataReg       <= dataIn;
-    readWriteReg  <= readWriteIn;
-  end
-end
-
-always @* begin
-  if (memDataValid) begin
-    cacheValid[memPos] <= 1;
-    cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
-    cacheData [memPos] <= memDataIn;
-    if (readWriteReg) cacheDirty[memPos] <= 0;
-  end
-  if (acceptWrite) begin
-    cacheDirty[memPos] <= 0;
-  end
-end
 
 integer i;
 always @(posedge clkIn) begin
@@ -116,19 +99,33 @@ always @(posedge clkIn) begin
       cacheData[i] <= 0;
     end
   end else if (readyIn) begin
-    if (clearIn && readWriteReg == 1) begin
+    if (memDataValid) begin
+      cacheValid[memPos] <= 1;
+      cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
+      cacheData [memPos] <= memDataIn;
+    end
+    if (acceptWrite) begin
+      cacheDirty[memPos] <= 0;
+    end
+    if (clearIn && readWriteMerged == 1) begin
       // abort memory read operation when there is a wrong branch prediction
       outValidReg    <= 0;
       outRegWriteSuc <= 0;
       accessTypeReg  <= 2'b00;
     end else begin
+      if (accessType != 2'b00) begin
+        dataAddrReg   <= dataAddrIn;
+        accessTypeReg <= accessType;
+        dataReg       <= dataIn;
+        readWriteReg  <= readWriteIn;
+      end
       outValidReg    <= outValid;
       outRegWriteSuc <= outRegWrite;
       if (ready) begin
         accessTypeReg  <= 2'b00;
-        case (accessTypeReg)
+        case (accessTypeMerged)
           2'b01: begin // byte
-            if (readWriteReg) begin
+            if (readWriteMerged) begin
               // read
               case (blockPos)
                 4'b0000: outReg <= {24'b0, cacheData[dataPos][7:0]};
@@ -152,28 +149,28 @@ always @(posedge clkIn) begin
               // write
               cacheDirty[dataPos] <= 1;
               case (blockPos)
-                4'b0000: cacheData[dataPos][7:0]     <= dataReg[7:0];
-                4'b0001: cacheData[dataPos][15:8]    <= dataReg[7:0];
-                4'b0010: cacheData[dataPos][23:16]   <= dataReg[7:0];
-                4'b0011: cacheData[dataPos][31:24]   <= dataReg[7:0];
-                4'b0100: cacheData[dataPos][39:32]   <= dataReg[7:0];
-                4'b0101: cacheData[dataPos][47:40]   <= dataReg[7:0];
-                4'b0110: cacheData[dataPos][55:48]   <= dataReg[7:0];
-                4'b0111: cacheData[dataPos][63:56]   <= dataReg[7:0];
-                4'b1000: cacheData[dataPos][71:64]   <= dataReg[7:0];
-                4'b1001: cacheData[dataPos][79:72]   <= dataReg[7:0];
-                4'b1010: cacheData[dataPos][87:80]   <= dataReg[7:0];
-                4'b1011: cacheData[dataPos][95:88]   <= dataReg[7:0];
-                4'b1100: cacheData[dataPos][103:96]  <= dataReg[7:0];
-                4'b1101: cacheData[dataPos][111:104] <= dataReg[7:0];
-                4'b1110: cacheData[dataPos][119:112] <= dataReg[7:0];
-                4'b1111: cacheData[dataPos][127:120] <= dataReg[7:0];
+                4'b0000: cacheData[dataPos][7:0]     <= dataMerged[7:0];
+                4'b0001: cacheData[dataPos][15:8]    <= dataMerged[7:0];
+                4'b0010: cacheData[dataPos][23:16]   <= dataMerged[7:0];
+                4'b0011: cacheData[dataPos][31:24]   <= dataMerged[7:0];
+                4'b0100: cacheData[dataPos][39:32]   <= dataMerged[7:0];
+                4'b0101: cacheData[dataPos][47:40]   <= dataMerged[7:0];
+                4'b0110: cacheData[dataPos][55:48]   <= dataMerged[7:0];
+                4'b0111: cacheData[dataPos][63:56]   <= dataMerged[7:0];
+                4'b1000: cacheData[dataPos][71:64]   <= dataMerged[7:0];
+                4'b1001: cacheData[dataPos][79:72]   <= dataMerged[7:0];
+                4'b1010: cacheData[dataPos][87:80]   <= dataMerged[7:0];
+                4'b1011: cacheData[dataPos][95:88]   <= dataMerged[7:0];
+                4'b1100: cacheData[dataPos][103:96]  <= dataMerged[7:0];
+                4'b1101: cacheData[dataPos][111:104] <= dataMerged[7:0];
+                4'b1110: cacheData[dataPos][119:112] <= dataMerged[7:0];
+                4'b1111: cacheData[dataPos][127:120] <= dataMerged[7:0];
               endcase
             end
           end
 
           2'b10: begin // half word
-            if (readWriteReg) begin
+            if (readWriteMerged) begin
               // read
               case (blockPos)
                 4'b0000: outReg <= {16'b0, cacheData[dataPos][15:0]};
@@ -197,24 +194,24 @@ always @(posedge clkIn) begin
               // write
               cacheDirty[dataPos] <= 1;
               case (blockPos)
-                4'b0000: cacheData[dataPos][15:0]    <= dataReg[15:0];
-                4'b0001: cacheData[dataPos][23:8]    <= dataReg[15:0];
-                4'b0010: cacheData[dataPos][31:16]   <= dataReg[15:0];
-                4'b0011: cacheData[dataPos][39:24]   <= dataReg[15:0];
-                4'b0100: cacheData[dataPos][47:32]   <= dataReg[15:0];
-                4'b0101: cacheData[dataPos][55:40]   <= dataReg[15:0];
-                4'b0110: cacheData[dataPos][63:48]   <= dataReg[15:0];
-                4'b0111: cacheData[dataPos][71:56]   <= dataReg[15:0];
-                4'b1000: cacheData[dataPos][79:64]   <= dataReg[15:0];
-                4'b1001: cacheData[dataPos][87:72]   <= dataReg[15:0];
-                4'b1010: cacheData[dataPos][95:80]   <= dataReg[15:0];
-                4'b1011: cacheData[dataPos][103:88]  <= dataReg[15:0];
-                4'b1100: cacheData[dataPos][111:96]  <= dataReg[15:0];
-                4'b1101: cacheData[dataPos][119:104] <= dataReg[15:0];
-                4'b1110: cacheData[dataPos][127:112] <= dataReg[15:0];
+                4'b0000: cacheData[dataPos][15:0]    <= dataMerged[15:0];
+                4'b0001: cacheData[dataPos][23:8]    <= dataMerged[15:0];
+                4'b0010: cacheData[dataPos][31:16]   <= dataMerged[15:0];
+                4'b0011: cacheData[dataPos][39:24]   <= dataMerged[15:0];
+                4'b0100: cacheData[dataPos][47:32]   <= dataMerged[15:0];
+                4'b0101: cacheData[dataPos][55:40]   <= dataMerged[15:0];
+                4'b0110: cacheData[dataPos][63:48]   <= dataMerged[15:0];
+                4'b0111: cacheData[dataPos][71:56]   <= dataMerged[15:0];
+                4'b1000: cacheData[dataPos][79:64]   <= dataMerged[15:0];
+                4'b1001: cacheData[dataPos][87:72]   <= dataMerged[15:0];
+                4'b1010: cacheData[dataPos][95:80]   <= dataMerged[15:0];
+                4'b1011: cacheData[dataPos][103:88]  <= dataMerged[15:0];
+                4'b1100: cacheData[dataPos][111:96]  <= dataMerged[15:0];
+                4'b1101: cacheData[dataPos][119:104] <= dataMerged[15:0];
+                4'b1110: cacheData[dataPos][127:112] <= dataMerged[15:0];
                 4'b1111: begin
-                  cacheData[dataPos][127:120] <= dataReg[7:0];
-                  cacheData[nextDataPos][7:0] <= dataReg[15:8];
+                  cacheData[dataPos][127:120] <= dataMerged[7:0];
+                  cacheData[nextDataPos][7:0] <= dataMerged[15:8];
                   cacheDirty[nextDataPos]     <= 1;
                 end
               endcase
@@ -222,7 +219,7 @@ always @(posedge clkIn) begin
           end
 
           2'b11: begin // word
-            if (readWriteReg) begin
+            if (readWriteMerged) begin
               // read
               case (blockPos)
                 4'b0000: outReg <= cacheData[dataPos][31:0];
@@ -246,32 +243,32 @@ always @(posedge clkIn) begin
               // write
               cacheDirty[dataPos] <= 1;
               case (blockPos)
-                4'b0000: cacheData[dataPos][31:0]    <= dataReg[31:0];
-                4'b0001: cacheData[dataPos][39:8]    <= dataReg[31:0];
-                4'b0010: cacheData[dataPos][47:16]   <= dataReg[31:0];
-                4'b0011: cacheData[dataPos][55:24]   <= dataReg[31:0];
-                4'b0100: cacheData[dataPos][63:32]   <= dataReg[31:0];
-                4'b0101: cacheData[dataPos][71:40]   <= dataReg[31:0];
-                4'b0110: cacheData[dataPos][79:48]   <= dataReg[31:0];
-                4'b0111: cacheData[dataPos][87:56]   <= dataReg[31:0];
-                4'b1000: cacheData[dataPos][95:64]   <= dataReg[31:0];
-                4'b1001: cacheData[dataPos][103:72]  <= dataReg[31:0];
-                4'b1010: cacheData[dataPos][111:80]  <= dataReg[31:0];
-                4'b1011: cacheData[dataPos][119:88]  <= dataReg[31:0];
-                4'b1100: cacheData[dataPos][127:96]  <= dataReg[31:0];
+                4'b0000: cacheData[dataPos][31:0]    <= dataMerged[31:0];
+                4'b0001: cacheData[dataPos][39:8]    <= dataMerged[31:0];
+                4'b0010: cacheData[dataPos][47:16]   <= dataMerged[31:0];
+                4'b0011: cacheData[dataPos][55:24]   <= dataMerged[31:0];
+                4'b0100: cacheData[dataPos][63:32]   <= dataMerged[31:0];
+                4'b0101: cacheData[dataPos][71:40]   <= dataMerged[31:0];
+                4'b0110: cacheData[dataPos][79:48]   <= dataMerged[31:0];
+                4'b0111: cacheData[dataPos][87:56]   <= dataMerged[31:0];
+                4'b1000: cacheData[dataPos][95:64]   <= dataMerged[31:0];
+                4'b1001: cacheData[dataPos][103:72]  <= dataMerged[31:0];
+                4'b1010: cacheData[dataPos][111:80]  <= dataMerged[31:0];
+                4'b1011: cacheData[dataPos][119:88]  <= dataMerged[31:0];
+                4'b1100: cacheData[dataPos][127:96]  <= dataMerged[31:0];
                 4'b1101: begin
-                  cacheData[dataPos][127:104] <= dataReg[23:0];
-                  cacheData[nextDataPos][7:0] <= dataReg[31:24];
+                  cacheData[dataPos][127:104] <= dataMerged[23:0];
+                  cacheData[nextDataPos][7:0] <= dataMerged[31:24];
                   cacheDirty[nextDataPos]     <= 1;
                 end
                 4'b1110: begin
-                  cacheData[dataPos][127:112]  <= dataReg[15:0];
-                  cacheData[nextDataPos][15:0] <= dataReg[31:16];
+                  cacheData[dataPos][127:112]  <= dataMerged[15:0];
+                  cacheData[nextDataPos][15:0] <= dataMerged[31:16];
                   cacheDirty[nextDataPos]      <= 1;
                 end
                 4'b1111: begin
-                  cacheData[dataPos][127:120]  <= dataReg[7:0];
-                  cacheData[nextDataPos][23:0] <= dataReg[31:8];
+                  cacheData[dataPos][127:120]  <= dataMerged[7:0];
+                  cacheData[nextDataPos][23:0] <= dataMerged[31:8];
                   cacheDirty[nextDataPos]      <= 1;
                 end
               endcase
