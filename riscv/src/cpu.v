@@ -251,7 +251,7 @@ Predictor #(
   .resetIn     (rst_in),
   .clockIn     (clk_in),
   .readyIn     (rdy_in),
-  .instrAddr   (fetchInstrAddr),
+  .instrPos    (fetchInstrAddr[PREDICTOR_WIDTH+1:2]),
   .updateValid (predictorUpdateValid),
   .updateInstr (predictorUpdateInstrAddr),
   .jump        (predicted),
