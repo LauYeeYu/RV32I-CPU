@@ -47,6 +47,8 @@ module LoadStoreBuffer #(
 ) (
   input  wire                 resetIn,      // resetIn
   input  wire                 clockIn,      // clockIn
+  input  wire                 clearIn,      // clearIn
+  input  wire                 readyIn,      // readyIn
   output wire                 lsbUpdate,    // load & store buffer update signal
   output wire [ROB_WIDTH-1:0] lsbRobIndex,  // load & store buffer rob index
   output wire [31:0]          lsbUpdateVal, // load & store buffer value

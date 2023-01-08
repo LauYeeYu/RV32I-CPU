@@ -10,6 +10,7 @@ module LoadStoreBuffer #(
   input  wire                 resetIn,      // resetIn
   input  wire                 clockIn,      // clockIn
   input  wire                 clearIn,      // clearIn
+  input  wire                 readyIn,      // readyIn
   output wire                 lsbUpdate,    // load & store buffer update signal
   output wire [ROB_WIDTH-1:0] lsbRobIndex,  // load & store buffer rob index
   output wire [31:0]          lsbUpdateVal, // load & store buffer value
@@ -167,14 +168,14 @@ always @(posedge clockIn) begin
       dataConstrtId[i]  <= {ROB_WIDTH{1'b0}};
       op[i]             <= {LSB_OP_WIDTH{1'b0}};
     end
-  end else if (clearIn) begin
+  end else if (clearIn && readyIn) begin
     for (i = 0; i < LSB_SIZE; i = i + 1) begin
       valid <= ready;
     end
     if (processing && ((readWriteReg == 1) || dataWriteSuc)) begin
       processing <= 1'b0;
     end
-  end else begin
+  end else if (readyIn) begin
     // Handle the update data from the reservation station
     if (rsUpdate) begin
       for (i = 0; i < LSB_SIZE; i = i + 1) begin

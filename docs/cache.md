@@ -34,13 +34,14 @@ module Cache #(
   input  wire        clkIn,         // system clock (from CPU)
   input  wire        resetIn,       // resetIn (from CPU)
   input  wire        clearIn,       // wrong branch prediction signal
+  input  wire        readyIn,       // ready signal (from CPU)
   input  wire [7:0]  memIn,         // data from RAM
   input  wire [31:0] instrAddrIn,   // instruction address (Instruction Unit)
   input  wire [1:0]  accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
   input  wire        readWriteIn,   // read/write select (read: 1, write: 0)
   input  wire [31:0] dataAddrIn,    // data address (from Load Store Buffer)
   input  wire [31:0] dataIn,        // data to write (from Load Store Buffer)
-  output wire        readWriteOut,  // read/write select (read: 1, write: 0)
+  output wire        readWriteOut,  // read/write select (read: 0, write: 1)
   output wire [31:0] memAddr,       // memory address
   output wire [7:0]  memOut,        // write data to RAM
   output wire        instrOutValid, // instruction output valid signal (Instruction Unit)
@@ -143,6 +144,7 @@ module DCache #(
   input  wire                    clkIn,             // system clock (from CPU)
   input  wire                    resetIn,           // resetIn
   input  wire                    clearIn,           // wrong branch prediction signal
+  input  wire                    readyIn,           // ready signal
   input  wire [1:0]              accessType,        // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
   input  wire                    readWriteIn,       // read/write select (read: 1, write: 0)
   input  wire [31:0]             dataAddrIn,        // data address (Load & Store Buffer)

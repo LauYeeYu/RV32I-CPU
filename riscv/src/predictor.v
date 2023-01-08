@@ -4,6 +4,7 @@ module Predictor #(
 ) (
   input  wire        resetIn,       // resetIn
   input  wire        clockIn,       // clockIn
+  input  wire        readyIn,       // readyIn
   input  wire [31:0] instrAddr,     // instruction address (icache)
   input  wire        updateValid,   // update valid signal (Reorder Buffer)
   input  wire [31:0] updateInstr,   // instruction (Reorder Buffer)
@@ -25,7 +26,7 @@ always @(posedge clockIn) begin
     for (i = 0; i < LOCAL_SIZE; i = i + 1) begin
       localHistory[i] <= 2'b01;
     end
-  end else begin
+  end else if (readyIn) begin
     instrPos <= instrAddr[LOCAL_WIDTH+1:2];
     if (updateValid) begin
       case (localHistory[updatePos])

@@ -45,8 +45,9 @@ module ReservationStation #(
   parameter RS_WIDTH = 4,
   parameter ROB_WIDTH = 4
 ) (
-  input  wire resetIn,   // reset signal
-  input  wire clockIn,   // clock signal
+  input wire resetIn,   // reset signal
+  input wire clockIn,   // clock signal
+  input wire readyIn,   // ready signal
 
   // Instruction Unit part
   input  wire                   addValid,    // add valid signal

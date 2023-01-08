@@ -20,6 +20,7 @@ module Predictor #(
 ) (
   input  wire        resetIn,       // resetIn
   input  wire        clockIn,       // clockIn
+  input  wire        readyIn,       // readyIn
   input  wire [31:0] instrAddr,     // instruction address (icache)
   input  wire        updateValid,   // update valid signal (Reorder Buffer)
   input  wire [31:0] updateInstr,   // instruction (Reorder Buffer)

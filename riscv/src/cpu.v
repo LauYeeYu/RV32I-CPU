@@ -152,6 +152,7 @@ Cache #(
   .clkIn         (clk_in),
   .resetIn       (rst_in),
   .clearIn       (clear),
+  .readyIn       (rdy_in),
   .memIn         (mem_din),
   .instrAddrIn   (fetchInstrAddr),
   .accessType    (dataAccessType),
@@ -249,6 +250,7 @@ Predictor #(
 ) predictor(
   .resetIn     (rst_in),
   .clockIn     (clk_in),
+  .readyIn     (rdy_in),
   .instrAddr   (fetchInstrAddr),
   .updateValid (predictorUpdateValid),
   .updateInstr (predictorUpdateInstrAddr),
@@ -262,6 +264,7 @@ RegisterFile #(
   .resetIn (rst_in),
   .clockIn (clk_in),
   .clearIn (clear),
+  .readyIn (rdy_in),
   .reg1    (fetchRs1),
   .reg2    (fetchRs2),
   // For Instruciton Unit
@@ -294,6 +297,7 @@ ReorderBuffer #(
 ) reorderBuffer(
   .resetIn (rst_in),
   .clockIn (clk_in),
+  .readyIn (rdy_in),
   .clear   (clear),
   .newPc   (newPC),
   // For Reservation Station
@@ -345,6 +349,7 @@ ReservationStation #(
 ) reservationStation(
   .resetIn (mergedReset),
   .clockIn (clk_in),
+  .readyIn (rdy_in),
   // For Instruction Unit
   .addValid    (rsAddValid),
   .addOp       (rsAddOp),
@@ -374,6 +379,7 @@ LoadStoreBuffer #(
   .resetIn      (rst_in),
   .clearIn      (clear),
   .clockIn      (clk_in),
+  .readyIn      (rdy_in),
   .lsbUpdate    (lsbUpdate),
   .lsbRobIndex  (lsbUpdateRobId),
   .lsbUpdateVal (lsbUpdateValue),

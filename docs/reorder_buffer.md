@@ -35,6 +35,7 @@ module ReorderBuffer #(
 ) (
   input  wire        resetIn, // resetIn
   input  wire        clockIn, // clockIn
+  input  wire        readyIn, // readyIn
   output wire        clear,   // clear signal (when branch prediction is wrong)
   output wire [31:0] newPc,   // the correct PC value
 

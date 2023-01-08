@@ -4,6 +4,7 @@ module RegisterFile #(
   input wire       resetIn, // resetIn
   input wire       clockIn, // clockIn
   input wire       clearIn, // clearIn
+  input wire       readyIn, // readyIn
   input wire [4:0] reg1,    // register 1
   input wire [4:0] reg2,    // register 2
 
@@ -113,9 +114,9 @@ always @(posedge clockIn) begin
       constraintId[i] <= {ROB_WIDTH{1'b0}};
     end
     hasconstraint <= {32{1'b0}};
-  end else if (clearIn) begin
+  end else if (clearIn && readyIn) begin
     hasconstraint <= {32{1'b0}};
-  end else begin
+  end else if (readyIn) begin
     reg1Reg <= reg1;
     reg2Reg <= reg2;
   end

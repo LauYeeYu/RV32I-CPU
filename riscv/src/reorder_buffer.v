@@ -9,6 +9,7 @@ module ReorderBuffer #(
 ) (
   input  wire        resetIn, // resetIn
   input  wire        clockIn, // clockIn
+  input  wire        readyIn, // readyIn
   output wire        clear,   // clear signal (when branch prediction is wrong)
   output wire [31:0] newPc,   // the correct PC value
 
@@ -164,60 +165,62 @@ always @(posedge clockIn) begin
     predictUpdValidReg <= 1'b0;
     robBeginIdReg      <= {ROB_WIDTH{1'b0}};
     beginValidReg      <= 1'b0;
-  end else if (clearReg) begin
-    clearReg           <= 1'b0;
-    regUpdateValidReg  <= 1'b0;
-    predictUpdValidReg <= 1'b0;
-    robBeginIdReg      <= {ROB_WIDTH{1'b0}};
-    beginValidReg      <= 1'b0;
-    beginIndex         <= {ROB_WIDTH{1'b0}};
-    endIndex           <= {ROB_WIDTH{1'b0}};
-    valid              <= {ROB_SIZE{1'b0}};
-  end else if (notEmpty) begin
-    robBeginIdReg      <= beginIndex;
-    beginValidReg      <= 1'b1;
-    regUpdateValidReg  <= needUpdateReg;
-    predictUpdValidReg <= nextPredictUpdValid;
-    case (topType)
-      2'b00: begin // register write
-        if (topReady) begin
+  end else if (readyIn) begin
+    if (clearReg) begin
+      clearReg           <= 1'b0;
+      regUpdateValidReg  <= 1'b0;
+      predictUpdValidReg <= 1'b0;
+      robBeginIdReg      <= {ROB_WIDTH{1'b0}};
+      beginValidReg      <= 1'b0;
+      beginIndex         <= {ROB_WIDTH{1'b0}};
+      endIndex           <= {ROB_WIDTH{1'b0}};
+      valid              <= {ROB_SIZE{1'b0}};
+    end else if (notEmpty) begin
+      robBeginIdReg      <= beginIndex;
+      beginValidReg      <= 1'b1;
+      regUpdateValidReg  <= needUpdateReg;
+      predictUpdValidReg <= nextPredictUpdValid;
+      case (topType)
+        2'b00: begin // register write
+          if (topReady) begin
 `ifdef PRINT_REG_CHANGE
-          $display("ROB: write reg %d with value %h", topDestReg, topValue);
+            $display("ROB: write reg %d with value %h", topDestReg, topValue);
 `endif
-          valid[beginIndex] <= 1'b0;
-          beginIndex        <= beginIndex + 1'b1;
-          regUpdateDestReg  <= topDestReg;
-          regValueReg       <= topValue;
-          regUpdateRobIdReg <= beginIndex;
-        end
-      end
-      2'b01: begin // branch
-        if (topReady) begin
-          valid[beginIndex] <= 1'b0;
-          beginIndex        <= beginIndex + 1'b1;
-          updInstrAddrReg   <= topInstrAddr;
-          jumpResultReg     <= topValue[0];
-          if (wrongBranch) begin
-`ifdef PRINT_WRONG_BRANCH
-            $display("ROB: wrong branch, correct to %h", topMissAddr);
-`endif
-            beginIndex <= {ROB_WIDTH{1'b0}};
-            endIndex   <= {ROB_WIDTH{1'b0}};
-            valid      <= {ROB_SIZE{1'b0}};
-            newPcReg   <= topMissAddr;
-            clearReg   <= 1'b1;
+            valid[beginIndex] <= 1'b0;
+            beginIndex        <= beginIndex + 1'b1;
+            regUpdateDestReg  <= topDestReg;
+            regValueReg       <= topValue;
+            regUpdateRobIdReg <= beginIndex;
           end
         end
-      end
-      2'b10: begin
-        beginIndex <= beginIndex + 1'b1;
-      end
-    endcase
-  end else begin
-    robBeginIdReg      <= {ROB_WIDTH{1'b0}};
-    beginValidReg      <= 1'b0;
-    regUpdateValidReg  <= 1'b0;
-    predictUpdValidReg <= 1'b0;
+        2'b01: begin // branch
+          if (topReady) begin
+            valid[beginIndex] <= 1'b0;
+            beginIndex        <= beginIndex + 1'b1;
+            updInstrAddrReg   <= topInstrAddr;
+            jumpResultReg     <= topValue[0];
+            if (wrongBranch) begin
+  `ifdef PRINT_WRONG_BRANCH
+              $display("ROB: wrong branch, correct to %h", topMissAddr);
+  `endif
+              beginIndex <= {ROB_WIDTH{1'b0}};
+              endIndex   <= {ROB_WIDTH{1'b0}};
+              valid      <= {ROB_SIZE{1'b0}};
+              newPcReg   <= topMissAddr;
+              clearReg   <= 1'b1;
+            end
+          end
+        end
+        2'b10: begin
+          beginIndex <= beginIndex + 1'b1;
+        end
+      endcase
+    end else begin
+      robBeginIdReg      <= {ROB_WIDTH{1'b0}};
+      beginValidReg      <= 1'b0;
+      regUpdateValidReg  <= 1'b0;
+      predictUpdValidReg <= 1'b0;
+    end
   end
 end
 

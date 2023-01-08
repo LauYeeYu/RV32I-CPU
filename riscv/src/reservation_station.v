@@ -3,8 +3,9 @@ module ReservationStation #(
   parameter RS_WIDTH = 4,
   parameter ROB_WIDTH = 4
 ) (
-  input  wire resetIn,   // reset signal
-  input  wire clockIn,   // clock signal
+  input wire resetIn,   // reset signal
+  input wire clockIn,   // clock signal
+  input wire readyIn,   // ready signal
 
   // Instruction Unit part
   input  wire                   addValid,    // add valid signal
@@ -161,7 +162,7 @@ always @(posedge clockIn) begin
     updateValidReg    <= 0;
     updateValReg      <= 32'b0;
     updateRobIndexReg <= {ROB_WIDTH{1'b0}};
-  end else begin
+  end else if (readyIn) begin
     if (addValid) begin
       valid    [nextFree] <= 1'b1;
       robIndex [nextFree] <= addRobIndex;
