@@ -50,7 +50,6 @@ reg                    calculating;
 reg  [31:0]            v1Cal;
 reg  [31:0]            v2Cal;
 reg  [ROB_WIDTH-1:0]   robIdCal;
-reg  [RS_WIDTH-1:0]    rsIdCal;
 reg  [RS_OP_WIDTH-1:0] opCal;
 wire [31:0]            aluResult[SUPPORTED_OPS-1:0];
 wire [31:0]            resultCal = aluResult[opCal];
@@ -207,7 +206,6 @@ always @(posedge clockIn) begin
     v2Cal             <= v2ToCalc;
     opCal             <= opToCalc;
     robIdCal          <= robIdToCalc;
-    rsIdCal           <= nextCalc;
     if (hasNextCalc) begin
       valid[nextCalc]   <= 0;
       hasDep1[nextCalc] <= 1;
