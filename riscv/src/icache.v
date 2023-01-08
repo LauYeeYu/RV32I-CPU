@@ -17,7 +17,7 @@ module ICache #(
 
 reg [CACHE_SIZE-1:0]             cacheValid;
 reg [31:BLOCK_WIDTH+CACHE_WIDTH] cacheTag [CACHE_SIZE-1:0];
-reg [31:0]                       cacheData[CACHE_SIZE-1:0][3:0];
+reg [127:0]                      cacheData[CACHE_SIZE-1:0];
 
 // Utensils
 wire [CACHE_WIDTH-1:0] instrPos = instrAddrIn[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
@@ -27,7 +27,11 @@ wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_W
 
 assign miss          = ~hit;
 assign instrOutValid = hit;
-assign instrOut      = hit ? cacheData[instrPos][blockPos] : 32'b0;
+assign instrOut      = hit ?
+                         (blockPos == 2'b00) ? cacheData[instrPos][31:0] :
+                         (blockPos == 2'b01) ? cacheData[instrPos][63:32] :
+                         (blockPos == 2'b10) ? cacheData[instrPos][95:64] :
+                                               cacheData[instrPos][127:96] : 32'b0;
 
 always @(posedge clkIn) begin
   if (resetIn) cacheValid <= {CACHE_SIZE{1'b0}};
@@ -35,12 +39,9 @@ end
 
 always @* begin
   if (memDataValid) begin
-    cacheValid[memPos]    <= 1'b1;
-    cacheTag  [memPos]    <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
-    cacheData [memPos][0] <= memDataIn[31:0];
-    cacheData [memPos][1] <= memDataIn[63:32];
-    cacheData [memPos][2] <= memDataIn[95:64];
-    cacheData [memPos][3] <= memDataIn[127:96];
+    cacheValid[memPos] <= 1'b1;
+    cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
+    cacheData [memPos] <= memDataIn[127:0];
   end
 end
 
