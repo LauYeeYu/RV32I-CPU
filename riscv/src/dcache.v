@@ -49,13 +49,6 @@ wire [31:0] dataAddrMerged   = (accessType != 2'b00) ? dataAddrIn : dataAddrReg;
 wire [31:0] dataMerged       = (accessType != 2'b00) ? dataIn     : dataReg;
 wire        readWriteMerged  = (accessType != 2'b00) ? readWriteIn : readWriteReg;
 
-assign dataOut      = mutableAddr ? mutableMemDataIn : outReg;
-assign dataOutValid = outValidReg | mutableMemInValid;
-assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
-assign miss         = (needWriteBack | needLoad) & ~mutableAddr & (accessTypeMerged != 2'b00);
-assign missAddr     = needWriteBack ? writeBackTag : loadTag;
-assign readWriteOut = ~needWriteBack;
-
 wire                   onLastLine  = (dataAddrMerged[CACHE_WIDTH+BLOCK_WIDTH-1:BLOCK_WIDTH] == (CACHE_SIZE - 1));
 wire [CACHE_WIDTH-1:0] dataPos     = dataAddrMerged[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [CACHE_WIDTH-1:0] nextDataPos = dataAddrMerged[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH] + 1;
@@ -84,6 +77,12 @@ wire outValid    = ready && readWriteMerged;
 wire outRegWrite = ready && !readWriteMerged;
 
 assign writeBackOut = lineDirty ? cacheDataLine : nextCacheDataLine;
+assign dataOut      = mutableAddr ? mutableMemDataIn : outReg;
+assign dataOutValid = outValidReg | mutableMemInValid;
+assign dataWriteSuc = outRegWriteSuc | mutableWriteSuc;
+assign miss         = (needWriteBack | needLoad) & ~mutableAddr & (accessTypeMerged != 2'b00);
+assign missAddr     = needWriteBack ? writeBackTag : loadTag;
+assign readWriteOut = ~needWriteBack;
 
 integer i;
 always @(posedge clkIn) begin

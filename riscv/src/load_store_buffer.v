@@ -104,7 +104,6 @@ wire                    topDataHasDep = dataHasDep[beginIndex];
 wire [31:0]             topData       = data[beginIndex];
 wire [LSB_OP_WIDTH-1:0] topOp         = op[beginIndex];
 wire                    lastFinished  = dataValid | dataWriteSuc;
-wire                    readyForNext  = topValid & topReady & (lastFinished | ~processing);
 
 wire [31:0] signedByte    = {{24{1'b0}}, topData[31], topData[6:0]};
 wire [31:0] signedHW      = {{16{1'b0}}, topData[31], topData[14:0]};
@@ -118,6 +117,7 @@ wire isIoAddr = (topAddr[17:16] == 2'b11);
 wire topReady = (!valid[beginIndex] || topBaseHasDep) ? 1'b0 :
                 topReadWrite  ? isIoAddr ? topReadyState : 1'b1 // read
                               : topReadyState & ~topDataHasDep; // write
+wire readyForNext = topValid & topReady & (lastFinished | ~processing);
 
 wire baseHasDepMerged = addBaseHasDep &&
                         !((dataValid && (addBaseConstrtId == updateRobIdReg)) ||
