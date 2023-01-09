@@ -114,45 +114,26 @@ wire [ROB_WIDTH-1:0] nextEndIndex      = addIndex + 1'b1;
 assign full        = (beginIndex == endIndexPlusThree) ||
                      (beginIndex == endIndexPlusTwo) ||
                      (beginIndex == endIndexPlusOne);
-assign next        = endIndex;
-assign reqReady    = ready[request];
-assign reqValue    = value[request];
-assign rs1Ready    = valid[rs1Dep] & ready[rs1Dep];
-assign rs1Value    = value[rs1Dep];
-assign rs2Ready    = valid[rs2Dep] & ready[rs2Dep];
-assign rs2Value    = value[rs2Dep];
+assign next        = addValid ? endIndexPlusOne : endIndex;
+assign reqReady    = ready[request] || (rsUpdate && rsRobIndex == request) || (lsbUpdate && lsbRobIndex == request);
+assign reqValue    = (rsUpdate && rsRobIndex == request) ? rsUpdateVal :
+                     (lsbUpdate && lsbRobIndex == request) ? lsbUpdateVal : value[request];
+assign rs1Ready    = (valid[rs1Dep] && ready[rs1Dep]) ||
+                     (rsUpdate && rsRobIndex == rs1Dep) ||
+                     (lsbUpdate && lsbRobIndex == rs1Dep) ||
+                     (addValid && addReady && addIndex == rs1Dep);
+assign rs1Value    = (rsUpdate && rsRobIndex == rs1Dep) ? rsUpdateVal :
+                     (lsbUpdate && lsbRobIndex == rs1Dep) ? lsbUpdateVal :
+                     (addValid && addReady && addIndex == rs1Dep) ? addValue : value[rs1Dep];
+assign rs2Ready    = (valid[rs2Dep] && ready[rs2Dep]) ||
+                     (rsUpdate && rsRobIndex == rs2Dep) ||
+                     (lsbUpdate && lsbRobIndex == rs2Dep) ||
+                     (addValid && addReady && addIndex == rs2Dep);
+assign rs2Value    = (rsUpdate && rsRobIndex == rs2Dep) ? rsUpdateVal :
+                     (lsbUpdate && lsbRobIndex == rs2Dep) ? lsbUpdateVal :
+                     (addValid && addReady && addIndex == rs2Dep) ? addValue : value[rs2Dep];
 assign robBeginId  = robBeginIdReg;
 assign beginValid  = beginValidReg;
-
-always @* begin
-  if (addValid && !clearReg) begin
-    valid    [addIndex] <= 1'b1;
-    ready    [addIndex] <= addReady;
-    jump     [addIndex] <= addJump;
-    type     [addIndex] <= addType;
-    value    [addIndex] <= addValue;
-    destReg  [addIndex] <= addDest;
-    missAddr [addIndex] <= addAddr;
-    instrAddr[addIndex] <= addInstrAddr;
-    endIndex            <= nextEndIndex;
-  end
-end
-
-// Update data from reservation station
-always @* begin
-  if (rsUpdate) begin
-    value[rsRobIndex] <= rsUpdateVal;
-    ready[rsRobIndex] <= 1'b1;
-  end
-end
-
-// Update data from load & store buffer
-always @* begin
-  if (lsbUpdate) begin
-    value[lsbRobIndex] <= lsbUpdateVal;
-    ready[lsbRobIndex] <= 1'b1;
-  end
-end
 
 always @(posedge clockIn) begin
   if (resetIn) begin
@@ -175,51 +156,74 @@ always @(posedge clockIn) begin
       beginIndex         <= {ROB_WIDTH{1'b0}};
       endIndex           <= {ROB_WIDTH{1'b0}};
       valid              <= {ROB_SIZE{1'b0}};
-    end else if (notEmpty) begin
-      robBeginIdReg      <= beginIndex;
-      beginValidReg      <= 1'b1;
-      regUpdateValidReg  <= needUpdateReg;
-      predictUpdValidReg <= nextPredictUpdValid;
-      case (topType)
-        2'b00: begin // register write
-          if (topReady) begin
+    end else begin
+      if (addValid) begin
+        valid    [addIndex] <= 1'b1;
+        ready    [addIndex] <= addReady;
+        jump     [addIndex] <= addJump;
+        type     [addIndex] <= addType;
+        value    [addIndex] <= addValue;
+        destReg  [addIndex] <= addDest;
+        missAddr [addIndex] <= addAddr;
+        instrAddr[addIndex] <= addInstrAddr;
+        endIndex            <= nextEndIndex;
+      end
+      // Update data from reservation station
+      if (rsUpdate) begin
+        value[rsRobIndex] <= rsUpdateVal;
+        ready[rsRobIndex] <= 1'b1;
+      end
+      // Update data from load & store buffer
+      if (lsbUpdate) begin
+        value[lsbRobIndex] <= lsbUpdateVal;
+        ready[lsbRobIndex] <= 1'b1;
+      end
+      if (notEmpty) begin
+        robBeginIdReg      <= beginIndex;
+        beginValidReg      <= 1'b1;
+        regUpdateValidReg  <= needUpdateReg;
+        predictUpdValidReg <= nextPredictUpdValid;
+        case (topType)
+          2'b00: begin // register write
+            if (topReady) begin
 `ifdef PRINT_REG_CHANGE
-            $display("ROB: write reg %d with value %h", topDestReg, topValue);
+              $display("ROB: write reg %d with value %h", topDestReg, topValue);
 `endif
-            valid[beginIndex] <= 1'b0;
-            beginIndex        <= beginIndex + 1'b1;
-            regUpdateDestReg  <= topDestReg;
-            regValueReg       <= topValue;
-            regUpdateRobIdReg <= beginIndex;
-          end
-        end
-        2'b01: begin // branch
-          if (topReady) begin
-            valid[beginIndex] <= 1'b0;
-            beginIndex        <= beginIndex + 1'b1;
-            updInstrAddrReg   <= topInstrAddr;
-            jumpResultReg     <= topValue[0];
-            if (wrongBranch) begin
-  `ifdef PRINT_WRONG_BRANCH
-              $display("ROB: wrong branch, correct to %h", topMissAddr);
-  `endif
-              beginIndex <= {ROB_WIDTH{1'b0}};
-              endIndex   <= {ROB_WIDTH{1'b0}};
-              valid      <= {ROB_SIZE{1'b0}};
-              newPcReg   <= topMissAddr;
-              clearReg   <= 1'b1;
+              valid[beginIndex] <= 1'b0;
+              beginIndex        <= beginIndex + 1'b1;
+              regUpdateDestReg  <= topDestReg;
+              regValueReg       <= topValue;
+              regUpdateRobIdReg <= beginIndex;
             end
           end
-        end
-        2'b10: begin
-          beginIndex <= beginIndex + 1'b1;
-        end
-      endcase
-    end else begin
-      robBeginIdReg      <= {ROB_WIDTH{1'b0}};
-      beginValidReg      <= 1'b0;
-      regUpdateValidReg  <= 1'b0;
-      predictUpdValidReg <= 1'b0;
+          2'b01: begin // branch
+            if (topReady) begin
+              valid[beginIndex] <= 1'b0;
+              beginIndex        <= beginIndex + 1'b1;
+              updInstrAddrReg   <= topInstrAddr;
+              jumpResultReg     <= topValue[0];
+              if (wrongBranch) begin
+`ifdef PRINT_WRONG_BRANCH
+                $display("ROB: wrong branch, correct to %h", topMissAddr);
+`endif
+                beginIndex <= {ROB_WIDTH{1'b0}};
+                endIndex   <= {ROB_WIDTH{1'b0}};
+                valid      <= {ROB_SIZE{1'b0}};
+                newPcReg   <= topMissAddr;
+                clearReg   <= 1'b1;
+              end
+            end
+          end
+          2'b10: begin
+            beginIndex <= beginIndex + 1'b1;
+          end
+        endcase
+      end else begin
+        robBeginIdReg      <= {ROB_WIDTH{1'b0}};
+        beginValidReg      <= 1'b0;
+        regUpdateValidReg  <= 1'b0;
+        predictUpdValidReg <= 1'b0;
+      end
     end
   end
 end

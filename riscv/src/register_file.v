@@ -40,21 +40,29 @@ reg [ROB_WIDTH-1:0] constraintId[31:0];
 reg [4:0]           reg1Reg;
 reg [4:0]           reg2Reg;
 
-// Update register file
+integer i;
 always @* begin
-  if (rfUpdateValid && rfUpdateDest != 5'b00000) begin
-    constraintId [rfUpdateDest] <= rfUpdateRobId;
-    hasconstraint[rfUpdateDest] <= 1'b1;
-  end
-end
-
-// Update the value of register
-always @* begin
-  if (regUpdateValid && regUpdateDest != 5'b00000) begin
-    register[regUpdateDest] <= regUpdateValue;
-    if (regUpdateRobId == constraintId[regUpdateDest] &&
-        !(rfUpdateValid && rfUpdateDest == regUpdateDest)) begin
-      hasconstraint[regUpdateDest] <= 1'b0;
+  if (resetIn) begin
+    for (i = 0; i < 32; i = i + 1) begin
+      register[i]     <= 32'b0;
+      constraintId[i] <= {ROB_WIDTH{1'b0}};
+    end
+    hasconstraint <= {32{1'b0}};
+  end else if (clearIn) begin
+    hasconstraint <= {32{1'b0}};
+  end else begin
+    // Update register file
+    if (rfUpdateValid && rfUpdateDest != 5'b00000) begin
+      constraintId [rfUpdateDest] <= rfUpdateRobId;
+      hasconstraint[rfUpdateDest] <= 1'b1;
+    end
+    // Update the value of register
+    if (regUpdateValid && regUpdateDest != 5'b00000) begin
+      register[regUpdateDest] <= regUpdateValue;
+      if (regUpdateRobId == constraintId[regUpdateDest] &&
+          !(rfUpdateValid && rfUpdateDest == regUpdateDest)) begin
+        hasconstraint[regUpdateDest] <= 1'b0;
+      end
     end
   end
 end
@@ -106,16 +114,10 @@ wire [31:0] reg31Value = register[31];
 `endif
 
 // The daemon for register file
-integer i;
 always @(posedge clockIn) begin
   if (resetIn) begin
-    for (i = 0; i < 32; i = i + 1) begin
-      register[i]     <= 32'b0;
-      constraintId[i] <= {ROB_WIDTH{1'b0}};
-    end
-    hasconstraint <= {32{1'b0}};
-  end else if (clearIn && readyIn) begin
-    hasconstraint <= {32{1'b0}};
+    reg1Reg <= 5'b00000;
+    reg2Reg <= 5'b00000;
   end else if (readyIn) begin
     reg1Reg <= reg1;
     reg2Reg <= reg2;

@@ -1,5 +1,5 @@
 `ifdef DEBUG
-//`define PRINT_RESULT
+`define PRINT_RESULT
 `endif
 module LoadStoreBuffer #(
   parameter ROB_WIDTH = 4,
@@ -135,16 +135,6 @@ wire [31:0] dataMerged = addDataHasDep ?
                          addData;
 
 integer i;
-always @* begin
-  if (robBeginValid) begin
-    for (i = 0; i < LSB_SIZE; i = i + 1) begin
-      if (robId[i] == robBeginId) begin
-        ready[i] = 1'b1;
-      end
-    end
-  end
-end
-
 always @(posedge clockIn) begin
   if (resetIn) begin
     beginIndex     <= {LSB_WIDTH{1'b0}};
@@ -177,6 +167,14 @@ always @(posedge clockIn) begin
     end
     accessTypeReg <= 2'b00;
   end else if (readyIn) begin
+    if (robBeginValid) begin
+      for (i = 0; i < LSB_SIZE; i = i + 1) begin
+        if (robId[i] == robBeginId) begin
+          ready[i] = 1'b1;
+        end
+      end
+    end
+
     // Handle the update data from the reservation station
     if (rsUpdate) begin
       for (i = 0; i < LSB_SIZE; i = i + 1) begin

@@ -94,6 +94,7 @@ always @(posedge clkIn) begin
     dataAddrReg    <= 32'b0;
     dataReg        <= 32'b0;
     readWriteReg   <= 1'b1;
+    outReg         <= 32'b0;
     for (i = 0; i < CACHE_SIZE; i = i + 1) begin
       cacheTag[i]  <= 0;
       cacheData[i] <= 0;

@@ -206,6 +206,7 @@ always @(posedge clockIn) begin
     stallDependency  <= 4'b0000;
     instrRegValid    <= 1'b0;
     robAddValidReg   <= 1'b0;
+    robAddReadyReg   <= 1'b0;
     rsAddValidReg    <= 1'b0;
     rfUpdateValidReg <= 1'b0;
     lsbAddValidReg   <= 1'b0;
