@@ -28,8 +28,8 @@ The interfaces are listed below:
 module Cache #(
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
-  parameter ICACHE_WIDTH = 8,
-  parameter DCACHE_WIDTH = 9
+  parameter ICACHE_WIDTH = 5,
+  parameter DCACHE_WIDTH = 5
 ) (
   input  wire        clkIn,         // system clock (from CPU)
   input  wire        resetIn,       // resetIn (from CPU)
@@ -90,7 +90,7 @@ The interfaces are listed below:
 module ICache #(
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
-  parameter CACHE_WIDTH = 8,
+  parameter CACHE_WIDTH = 5,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
   input  wire                    clkIn,         // system clock (from CPU)
@@ -138,7 +138,7 @@ The interfaces are listed below:
 module DCache #(
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
-  parameter CACHE_WIDTH = 9,
+  parameter CACHE_WIDTH = 5,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
   input  wire                    clkIn,             // system clock (from CPU)
