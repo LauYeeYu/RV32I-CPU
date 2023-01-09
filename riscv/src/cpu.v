@@ -38,7 +38,7 @@ parameter LSB_WIDTH         = 4;
 parameter RS_OP_WIDTH       = 4;
 parameter ROB_OP_WIDTH      = 2;
 parameter LSB_OP_WIDTH      = 3;
-parameter PREDICTOR_WIDTH   = 12;
+parameter PREDICTOR_WIDTH   = 6;
 
 // things about wrong prediction
 wire clear;

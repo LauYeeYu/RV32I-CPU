@@ -1,5 +1,5 @@
 module Predictor #(
-  parameter LOCAL_WIDTH = 12,
+  parameter LOCAL_WIDTH = 6,
   parameter LOCAL_SIZE = 2**LOCAL_WIDTH
 ) (
   input  wire                   resetIn,     // resetIn
