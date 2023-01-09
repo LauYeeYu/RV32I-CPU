@@ -105,8 +105,6 @@ wire [31:0]             topData       = data[beginIndex];
 wire [LSB_OP_WIDTH-1:0] topOp         = op[beginIndex];
 wire                    lastFinished  = dataValid | dataWriteSuc;
 
-wire [31:0] signedByte    = {{24{1'b0}}, topData[31], topData[6:0]};
-wire [31:0] signedHW      = {{16{1'b0}}, topData[31], topData[14:0]};
 wire [1:0]  topAccessType = topOp == 3'b000 ? 2'b01 : // Byte
                             topOp == 3'b001 ? 2'b10 : // Half Word
                             topOp == 3'b010 ? 2'b11 :
