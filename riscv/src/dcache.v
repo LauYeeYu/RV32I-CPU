@@ -1,7 +1,7 @@
 module DCache #(
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
-  parameter CACHE_WIDTH = 9,
+  parameter CACHE_WIDTH = 5,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
   input  wire                    clkIn,             // system clock (from CPU)
