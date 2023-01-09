@@ -63,6 +63,8 @@ wire [CACHE_WIDTH-1:0] memPos      = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDT
 wire [BLOCK_WIDTH-1:0] blockPos    = dataAddrMerged[BLOCK_WIDTH-1:0];
 wire [31:CACHE_WIDTH+BLOCK_WIDTH] dataTag     = dataAddrMerged[31:CACHE_WIDTH+BLOCK_WIDTH];
 wire [31:CACHE_WIDTH+BLOCK_WIDTH] nextDataTag = dataAddrMerged[31:CACHE_WIDTH+BLOCK_WIDTH] + onLastLine;
+wire [BLOCK_SIZE*8-1:0] cacheDataLine     = cacheData[dataPos];
+wire [BLOCK_SIZE*8-1:0] nextCacheDataLine = cacheData[nextDataPos];
 
 wire hit           = cacheValid[dataPos] && (cacheTag[dataPos] == dataTag);
 wire nextHit       = cacheValid[nextDataPos] && (cacheTag[nextDataPos] == nextDataTag);
@@ -81,7 +83,7 @@ wire ready       = hit && (accessTypeMerged != 2'b00) && (!nextLineUsed || nextH
 wire outValid    = ready && readWriteMerged;
 wire outRegWrite = ready && !readWriteMerged;
 
-assign writeBackOut = lineDirty ? cacheData[dataPos] : cacheData[nextDataPos];
+assign writeBackOut = lineDirty ? cacheDataLine : nextCacheDataLine;
 
 integer i;
 always @(posedge clkIn) begin
@@ -129,22 +131,22 @@ always @(posedge clkIn) begin
             if (readWriteMerged) begin
               // read
               case (blockPos)
-                4'b0000: outReg <= {24'b0, cacheData[dataPos][7:0]};
-                4'b0001: outReg <= {24'b0, cacheData[dataPos][15:8]};
-                4'b0010: outReg <= {24'b0, cacheData[dataPos][23:16]};
-                4'b0011: outReg <= {24'b0, cacheData[dataPos][31:24]};
-                4'b0100: outReg <= {24'b0, cacheData[dataPos][39:32]};
-                4'b0101: outReg <= {24'b0, cacheData[dataPos][47:40]};
-                4'b0110: outReg <= {24'b0, cacheData[dataPos][55:48]};
-                4'b0111: outReg <= {24'b0, cacheData[dataPos][63:56]};
-                4'b1000: outReg <= {24'b0, cacheData[dataPos][71:64]};
-                4'b1001: outReg <= {24'b0, cacheData[dataPos][79:72]};
-                4'b1010: outReg <= {24'b0, cacheData[dataPos][87:80]};
-                4'b1011: outReg <= {24'b0, cacheData[dataPos][95:88]};
-                4'b1100: outReg <= {24'b0, cacheData[dataPos][103:96]};
-                4'b1101: outReg <= {24'b0, cacheData[dataPos][111:104]};
-                4'b1110: outReg <= {24'b0, cacheData[dataPos][119:112]};
-                4'b1111: outReg <= {24'b0, cacheData[dataPos][127:120]};
+                4'b0000: outReg <= {24'b0, cacheDataLine[7:0]};
+                4'b0001: outReg <= {24'b0, cacheDataLine[15:8]};
+                4'b0010: outReg <= {24'b0, cacheDataLine[23:16]};
+                4'b0011: outReg <= {24'b0, cacheDataLine[31:24]};
+                4'b0100: outReg <= {24'b0, cacheDataLine[39:32]};
+                4'b0101: outReg <= {24'b0, cacheDataLine[47:40]};
+                4'b0110: outReg <= {24'b0, cacheDataLine[55:48]};
+                4'b0111: outReg <= {24'b0, cacheDataLine[63:56]};
+                4'b1000: outReg <= {24'b0, cacheDataLine[71:64]};
+                4'b1001: outReg <= {24'b0, cacheDataLine[79:72]};
+                4'b1010: outReg <= {24'b0, cacheDataLine[87:80]};
+                4'b1011: outReg <= {24'b0, cacheDataLine[95:88]};
+                4'b1100: outReg <= {24'b0, cacheDataLine[103:96]};
+                4'b1101: outReg <= {24'b0, cacheDataLine[111:104]};
+                4'b1110: outReg <= {24'b0, cacheDataLine[119:112]};
+                4'b1111: outReg <= {24'b0, cacheDataLine[127:120]};
               endcase
             end else begin
               // write
@@ -174,22 +176,22 @@ always @(posedge clkIn) begin
             if (readWriteMerged) begin
               // read
               case (blockPos)
-                4'b0000: outReg <= {16'b0, cacheData[dataPos][15:0]};
-                4'b0001: outReg <= {16'b0, cacheData[dataPos][23:8]};
-                4'b0010: outReg <= {16'b0, cacheData[dataPos][31:16]};
-                4'b0011: outReg <= {16'b0, cacheData[dataPos][39:24]};
-                4'b0100: outReg <= {16'b0, cacheData[dataPos][47:32]};
-                4'b0101: outReg <= {16'b0, cacheData[dataPos][55:40]};
-                4'b0110: outReg <= {16'b0, cacheData[dataPos][63:48]};
-                4'b0111: outReg <= {16'b0, cacheData[dataPos][71:56]};
-                4'b1000: outReg <= {16'b0, cacheData[dataPos][79:64]};
-                4'b1001: outReg <= {16'b0, cacheData[dataPos][87:72]};
-                4'b1010: outReg <= {16'b0, cacheData[dataPos][95:80]};
-                4'b1011: outReg <= {16'b0, cacheData[dataPos][103:88]};
-                4'b1100: outReg <= {16'b0, cacheData[dataPos][111:96]};
-                4'b1101: outReg <= {16'b0, cacheData[dataPos][119:104]};
-                4'b1110: outReg <= {16'b0, cacheData[dataPos][127:112]};
-                4'b1111: outReg <= {16'b0, cacheData[nextDataPos][7:0], cacheData[dataPos][127:120]};
+                4'b0000: outReg <= {16'b0, cacheDataLine[15:0]};
+                4'b0001: outReg <= {16'b0, cacheDataLine[23:8]};
+                4'b0010: outReg <= {16'b0, cacheDataLine[31:16]};
+                4'b0011: outReg <= {16'b0, cacheDataLine[39:24]};
+                4'b0100: outReg <= {16'b0, cacheDataLine[47:32]};
+                4'b0101: outReg <= {16'b0, cacheDataLine[55:40]};
+                4'b0110: outReg <= {16'b0, cacheDataLine[63:48]};
+                4'b0111: outReg <= {16'b0, cacheDataLine[71:56]};
+                4'b1000: outReg <= {16'b0, cacheDataLine[79:64]};
+                4'b1001: outReg <= {16'b0, cacheDataLine[87:72]};
+                4'b1010: outReg <= {16'b0, cacheDataLine[95:80]};
+                4'b1011: outReg <= {16'b0, cacheDataLine[103:88]};
+                4'b1100: outReg <= {16'b0, cacheDataLine[111:96]};
+                4'b1101: outReg <= {16'b0, cacheDataLine[119:104]};
+                4'b1110: outReg <= {16'b0, cacheDataLine[127:112]};
+                4'b1111: outReg <= {16'b0, nextCacheDataLine[7:0], cacheDataLine[127:120]};
               endcase
             end else begin
               // write
@@ -223,22 +225,22 @@ always @(posedge clkIn) begin
             if (readWriteMerged) begin
               // read
               case (blockPos)
-                4'b0000: outReg <= cacheData[dataPos][31:0];
-                4'b0001: outReg <= cacheData[dataPos][39:8];
-                4'b0010: outReg <= cacheData[dataPos][47:16];
-                4'b0011: outReg <= cacheData[dataPos][55:24];
-                4'b0100: outReg <= cacheData[dataPos][63:32];
-                4'b0101: outReg <= cacheData[dataPos][71:40];
-                4'b0110: outReg <= cacheData[dataPos][79:48];
-                4'b0111: outReg <= cacheData[dataPos][87:56];
-                4'b1000: outReg <= cacheData[dataPos][95:64];
-                4'b1001: outReg <= cacheData[dataPos][103:72];
-                4'b1010: outReg <= cacheData[dataPos][111:80];
-                4'b1011: outReg <= cacheData[dataPos][119:88];
-                4'b1100: outReg <= cacheData[dataPos][127:96];
-                4'b1101: outReg <= {cacheData[nextDataPos][7:0], cacheData[dataPos][127:104]};
-                4'b1110: outReg <= {cacheData[nextDataPos][15:0], cacheData[dataPos][127:112]};
-                4'b1111: outReg <= {cacheData[nextDataPos][23:0], cacheData[dataPos][127:120]};
+                4'b0000: outReg <= cacheDataLine[31:0];
+                4'b0001: outReg <= cacheDataLine[39:8];
+                4'b0010: outReg <= cacheDataLine[47:16];
+                4'b0011: outReg <= cacheDataLine[55:24];
+                4'b0100: outReg <= cacheDataLine[63:32];
+                4'b0101: outReg <= cacheDataLine[71:40];
+                4'b0110: outReg <= cacheDataLine[79:48];
+                4'b0111: outReg <= cacheDataLine[87:56];
+                4'b1000: outReg <= cacheDataLine[95:64];
+                4'b1001: outReg <= cacheDataLine[103:72];
+                4'b1010: outReg <= cacheDataLine[111:80];
+                4'b1011: outReg <= cacheDataLine[119:88];
+                4'b1100: outReg <= cacheDataLine[127:96];
+                4'b1101: outReg <= {nextCacheDataLine[7:0], cacheDataLine[127:104]};
+                4'b1110: outReg <= {nextCacheDataLine[15:0], cacheDataLine[127:112]};
+                4'b1111: outReg <= {nextCacheDataLine[23:0], cacheDataLine[127:120]};
               endcase
             end else begin
               // write
