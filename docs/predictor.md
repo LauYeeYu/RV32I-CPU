@@ -1,7 +1,7 @@
 # Predictor
 
 The predictor will predict which branch will probably be taken when
-encounters branch statement. [Reorder buffer](#reorder-buffer) gives
+encounters branch statement. [Reorder buffer](reorder_buffer.md) gives
 predictor data to predict.
 
 ## Predictor Module
