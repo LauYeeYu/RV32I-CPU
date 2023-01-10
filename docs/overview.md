@@ -1,10 +1,10 @@
-# Overivew of the CPU Architecture
+# Overview of the CPU Architecture
 
 ## Diagram
 
 ```mermaid
 graph TD
-Mem[[Memeory]]
+Mem[[Memory]]
 subgraph Cache
   ICache[Instruction Cache]
   DCache[Data Cache]
