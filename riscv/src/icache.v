@@ -1,7 +1,7 @@
 module ICache #(
   parameter BLOCK_WIDTH = 4,
   parameter BLOCK_SIZE = 2**BLOCK_WIDTH,
-  parameter CACHE_WIDTH = 5,
+  parameter CACHE_WIDTH = 4,
   parameter CACHE_SIZE = 2**CACHE_WIDTH
 ) (
   input  wire                    clkIn,         // system clock (from CPU)
@@ -24,14 +24,15 @@ wire [CACHE_WIDTH-1:0] instrPos = instrAddrIn[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WID
 wire [CACHE_WIDTH-1:0] memPos   = memAddr[CACHE_WIDTH+BLOCK_SIZE-1:BLOCK_WIDTH];
 wire [BLOCK_WIDTH-3:0] blockPos = instrAddrIn[BLOCK_WIDTH-1:2];
 wire hit = cacheValid[instrPos] && (cacheTag[instrPos] == instrAddrIn[31:CACHE_WIDTH+BLOCK_WIDTH]);
+wire [BLOCK_SIZE*8-1:0] cacheDataLine  = cacheData[instrPos];
 
 assign miss          = ~hit;
 assign instrOutValid = hit;
 assign instrOut      = hit ?
-                         (blockPos == 2'b00) ? cacheData[instrPos][31:0] :
-                         (blockPos == 2'b01) ? cacheData[instrPos][63:32] :
-                         (blockPos == 2'b10) ? cacheData[instrPos][95:64] :
-                                               cacheData[instrPos][127:96] : 32'b0;
+                         (blockPos == 2'b00) ? cacheDataLine[31:0] :
+                         (blockPos == 2'b01) ? cacheDataLine[63:32] :
+                         (blockPos == 2'b10) ? cacheDataLine[95:64] :
+                                               cacheDataLine[127:96] : 32'b0;
 
 always @* begin
   if (resetIn) begin

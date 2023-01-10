@@ -30,8 +30,8 @@ module cpu(
 
 // parameters
 parameter CACHE_BLOCK_WIDTH = 4;
-parameter ICACHE_WIDTH      = 5;
-parameter DCACHE_WIDTH      = 5;
+parameter ICACHE_WIDTH      = 4;
+parameter DCACHE_WIDTH      = 3;
 parameter ROB_WIDTH         = 4;
 parameter RS_WIDTH          = 4;
 parameter LSB_WIDTH         = 4;
