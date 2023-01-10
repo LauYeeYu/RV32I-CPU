@@ -72,7 +72,7 @@ wire needWriteBack = (!mutableAddr && (accessTypeMerged != 2'b00)) &&
 wire needLoad      = !hit || (nextLineUsed && !nextHit);
 wire [31:BLOCK_WIDTH] writeBackTag = lineDirty ? {cacheTag[dataPos], dataPos} : {cacheTag[nextDataPos], nextDataPos};
 wire [31:BLOCK_WIDTH] loadTag      = hit ? {nextDataTag, nextDataPos} : {dataTag, dataPos};
-wire ready       = hit && (accessTypeMerged != 2'b00) && (!nextLineUsed || nextHit); // mutable address cannot hit
+wire ready       = (!memDataValid && hit) && (accessTypeMerged != 2'b00) && (!nextLineUsed || nextHit); // mutable address cannot hit
 wire outValid    = ready && readWriteMerged;
 wire outRegWrite = ready && !readWriteMerged;
 
@@ -101,7 +101,7 @@ always @(posedge clkIn) begin
       cacheData[i] <= 0;
     end
   end else if (readyIn) begin
-    if (memDataValid) begin
+    if (memDataValid && !cacheDirty[memPos]) begin
       cacheValid[memPos] <= 1;
       cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];
       cacheData [memPos] <= memDataIn;
