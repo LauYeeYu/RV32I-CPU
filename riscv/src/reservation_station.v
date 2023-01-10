@@ -177,8 +177,8 @@ always @(posedge clockIn) begin
 
     // send the update data out
     updateValidReg    <= calculating;
-    updateRobIndexReg <= robIdCal;
-    updateValReg      <= resultCal;
+    updateRobIndexReg <= calculating ? robIdCal : {ROB_WIDTH{1'b0}};
+    updateValReg      <= calculating ? resultCal : 32'b0;
 
     // Updating the dependencies
     for (i = 0; i < 2**RS_WIDTH; i = i + 1) begin
