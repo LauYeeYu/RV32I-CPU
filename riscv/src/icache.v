@@ -35,7 +35,7 @@ assign instrOut      = hit ?
                                                cacheDataLine[127:96] : 32'b0;
 
 integer i;
-always @* begin
+always @(posedge clkIn) begin
   if (resetIn) begin
     cacheValid <= {CACHE_SIZE{1'b0}};
     for (i=0; i<CACHE_SIZE; i=i+1) begin

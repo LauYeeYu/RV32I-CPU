@@ -41,16 +41,20 @@ reg [4:0]           reg1Reg;
 reg [4:0]           reg2Reg;
 
 integer i;
-always @* begin
+always @(posedge clockIn) begin
   if (resetIn) begin
     for (i = 0; i < 32; i = i + 1) begin
       register[i]     <= 32'b0;
       constraintId[i] <= {ROB_WIDTH{1'b0}};
     end
     hasconstraint <= {32{1'b0}};
+    reg1Reg <= 5'b00000;
+    reg2Reg <= 5'b00000;
   end else if (clearIn) begin
     hasconstraint <= {32{1'b0}};
-  end else begin
+  end else if (readyIn) begin
+    reg1Reg <= reg1;
+    reg2Reg <= reg2;
     // Update register file
     if (rfUpdateValid && rfUpdateDest != 5'b00000) begin
       constraintId [rfUpdateDest] <= rfUpdateRobId;
@@ -68,14 +72,24 @@ always @* begin
 end
 
 // Handle the request from instruction unit
-assign robRs1Dep = constraintId[reg1Reg];
-assign robRs2Dep = constraintId[reg2Reg];
-assign rs1Dirty  = hasconstraint[reg1Reg] & ~robRs1Ready;
-assign rs2Dirty  = hasconstraint[reg2Reg] & ~robRs2Ready;
-assign rs1Dependency = constraintId[reg1Reg];
-assign rs2Dependency = constraintId[reg2Reg];
-assign rs1Value = hasconstraint[reg1Reg] ? robRs1Value : register[reg1Reg];
-assign rs2Value = hasconstraint[reg2Reg] ? robRs2Value : register[reg2Reg];
+wire hasConstraintReg1 = hasconstraint[reg1Reg];
+wire hasConstraintReg2 = hasconstraint[reg2Reg];
+wire rfMatch1 = (rfUpdateValid && rfUpdateDest != 5'b00000 && reg1Reg == rfUpdateDest);
+wire rfMatch2 = (rfUpdateValid && rfUpdateDest != 5'b00000 && reg2Reg == rfUpdateDest);
+wire regUpdMatch1 = (regUpdateValid && regUpdateDest != 5'b00000 && reg1Reg == regUpdateDest &&
+                     regUpdateRobId == constraintId[regUpdateDest]);
+wire regUpdMatch2 = (regUpdateValid && regUpdateDest != 5'b00000 && reg2Reg == regUpdateDest &&
+                      regUpdateRobId == constraintId[regUpdateDest]);
+assign robRs1Dep = rfMatch1 ? rfUpdateRobId : constraintId[reg1Reg];
+assign robRs2Dep = rfMatch2 ? rfUpdateRobId : constraintId[reg2Reg];
+wire hasconstraint1 = rfMatch1 ? 1'b1 : regUpdMatch1 ? 1'b0 : hasConstraintReg1;
+wire hasconstraint2 = rfMatch2 ? 1'b1 : regUpdMatch2 ? 1'b0 : hasConstraintReg2;
+assign rs1Dirty  = hasconstraint1 & ~robRs1Ready;
+assign rs2Dirty  = hasconstraint2 & ~robRs2Ready;
+assign rs1Dependency = robRs1Dep;
+assign rs2Dependency = robRs2Dep;
+assign rs1Value = rfMatch1 ? robRs1Value : regUpdMatch1 ? regUpdateValue : hasConstraintReg1 ? robRs1Value : register[reg1Reg];
+assign rs2Value = rfMatch2 ? robRs2Value : regUpdMatch2 ? regUpdateValue : hasConstraintReg2 ? robRs2Value : register[reg2Reg];
 
 // Register values
 `ifdef DEBUG
@@ -116,11 +130,7 @@ wire [31:0] reg31Value = register[31];
 // The daemon for register file
 always @(posedge clockIn) begin
   if (resetIn) begin
-    reg1Reg <= 5'b00000;
-    reg2Reg <= 5'b00000;
   end else if (readyIn) begin
-    reg1Reg <= reg1;
-    reg2Reg <= reg2;
   end
 end
 endmodule
