@@ -153,6 +153,7 @@ Cache #(
   .resetIn       (rst_in),
   .clearIn       (clear),
   .readyIn       (rdy_in),
+  .ioBufferFull  (io_buffer_full),
   .memIn         (mem_din),
   .instrAddrIn   (fetchInstrAddr),
   .accessType    (dataAccessType),

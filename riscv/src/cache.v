@@ -8,6 +8,7 @@ module Cache #(
   input  wire        resetIn,       // resetIn (from CPU)
   input  wire        clearIn,       // wrong branch prediction signal
   input  wire        readyIn,       // ready signal (from CPU)
+  input  wire        ioBufferFull,  // IO buffer full signal
   input  wire [7:0]  memIn,         // data from RAM
   input  wire [31:0] instrAddrIn,   // instruction address (Instruction Unit)
   input  wire [1:0]  accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
@@ -373,50 +374,54 @@ module Cache #(
           idleAgain <= 1;
         end
       end else if (mutableLoading) begin
-        case (mutableProgress)
-          2'b00: begin
-            memAddrReg <= dataAddrMerged + 1;
-            mutableProgress <= 2'b01;
-            if (accessTypeMerged == 2'b01) begin
+        if (readWriteMerged || !ioBufferFull) begin
+          case (mutableProgress)
+            2'b00: begin
+              memAddrReg <= dataAddrMerged + 1;
+              mutableProgress <= 2'b01;
+              if (accessTypeMerged == 2'b01) begin
+                mutableReady   <= 1;
+                mutableLoading <= 0;
+              end
+            end
+            2'b01: begin
+              memAddrReg      <= dataAddrMerged + 2;
+              mutableProgress <= 2'b10;
+              if (readWriteMerged) dataReg[7:0] <= memIn;
+              else              memOutReg    <= dataMerged[15:8];
+              if (accessTypeMerged == 2'b10) begin
+                mutableReady   <= 1;
+                mutableLoading <= 0;
+              end
+            end
+            2'b10: begin
+              memAddrReg      <= dataAddrMerged + 3;
+              mutableProgress <= 2'b11;
+              if (readWriteMerged) dataReg[15:8] <= memIn;
+              else              memOutReg     <= dataMerged[23:16];
+            end
+            2'b11: begin
               mutableReady   <= 1;
               mutableLoading <= 0;
+              if (readWriteMerged) begin
+                dataReg[23:16] <= memIn;
+                memAddrReg     <= 32'b0;
+              end else begin
+                memOutReg  <= dataMerged[31:24];
+                memAddrReg <= dataAddrMerged + 4;
+              end
             end
-          end
-          2'b01: begin
-            memAddrReg      <= dataAddrMerged + 2;
-            mutableProgress <= 2'b10;
-            if (readWriteMerged) dataReg[7:0] <= memIn;
-            else              memOutReg    <= dataMerged[15:8];
-            if (accessTypeMerged == 2'b10) begin
-              mutableReady   <= 1;
-              mutableLoading <= 0;
-            end
-          end
-          2'b10: begin
-            memAddrReg      <= dataAddrMerged + 3;
-            mutableProgress <= 2'b11;
-            if (readWriteMerged) dataReg[15:8] <= memIn;
-            else              memOutReg     <= dataMerged[23:16];
-          end
-          2'b11: begin
-            mutableReady   <= 1;
-            mutableLoading <= 0;
-            if (readWriteMerged) begin
-              dataReg[23:16] <= memIn;
-              memAddrReg     <= 32'b0;
-            end else begin
-              memOutReg  <= dataMerged[31:24];
-              memAddrReg <= dataAddrMerged + 4;
-            end
-          end
-        endcase
+          endcase
+        end
       end else if (mutableAddr && !mutableReady) begin
-        mutableProgress <= readWriteMerged ? 2'b00 : 2'b01;
-        mutableLoading  <= readWriteMerged == 1 || accessTypeMerged != 2'b01;
-        mutableReady    <= readWriteMerged == 0 && accessTypeMerged == 2'b01;
-        memReadWrite    <= readWriteMerged;
-        memAddrReg      <= dataAddrMerged;
-        if (!readWriteMerged) memOutReg  <= dataMerged[7:0];
+        if (readWriteMerged || !ioBufferFull) begin
+          mutableProgress <= readWriteMerged ? 2'b00 : 2'b01;
+          mutableLoading  <= readWriteMerged == 1 || accessTypeMerged != 2'b01;
+          mutableReady    <= readWriteMerged == 0 && accessTypeMerged == 2'b01;
+          memReadWrite    <= readWriteMerged;
+          memAddrReg      <= dataAddrMerged;
+          if (!readWriteMerged) memOutReg  <= dataMerged[7:0];
+        end
       end else if (dcacheMiss) begin // dcache have the priority to use memory
         readWrite         <= dcacheReadWriteOut;
         fromICache        <= 0;

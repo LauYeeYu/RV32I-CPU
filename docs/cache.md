@@ -35,6 +35,7 @@ module Cache #(
   input  wire        resetIn,       // resetIn (from CPU)
   input  wire        clearIn,       // wrong branch prediction signal
   input  wire        readyIn,       // ready signal (from CPU)
+  input  wire        ioBufferFull,  // IO buffer full signal
   input  wire [7:0]  memIn,         // data from RAM
   input  wire [31:0] instrAddrIn,   // instruction address (Instruction Unit)
   input  wire [1:0]  accessType,    // access type (none: 2'b00, byte: 2'b01, half word: 2'b10, word: 2'b11)
