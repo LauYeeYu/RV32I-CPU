@@ -135,17 +135,32 @@ assign rs2Value    = (rsUpdate && rsRobIndex == rs2Dep) ? rsUpdateVal :
 assign robBeginId  = robBeginIdReg;
 assign beginValid  = beginValidReg;
 
+integer i;
 always @(posedge clockIn) begin
   if (resetIn) begin
     beginIndex         <= {ROB_WIDTH{1'b0}};
     endIndex           <= {ROB_WIDTH{1'b0}};
     valid              <= {ROB_SIZE{1'b0}};
     ready              <= {ROB_SIZE{1'b0}};
+    jump               <= {ROB_SIZE{1'b0}};
     clearReg           <= 1'b0;
-    regUpdateValidReg  <= 1'b0;
+    newPcReg           <= 32'b0;
     predictUpdValidReg <= 1'b0;
+    updInstrAddrReg    <= 32'b0;
+    jumpResultReg      <= 1'b0;
+    regUpdateValidReg  <= 1'b0;
+    regUpdateDestReg   <= 5'b0;
+    regValueReg        <= 32'b0;
+    regUpdateRobIdReg  <= {ROB_WIDTH{1'b0}};
     robBeginIdReg      <= {ROB_WIDTH{1'b0}};
     beginValidReg      <= 1'b0;
+    for (i = 0; i < ROB_SIZE; i = i + 1) begin
+      type[i]       <= {ROB_OP_WIDTH{1'b0}};
+      value[i]      <= 32'b0;
+      destReg[i]    <= 5'b0;
+      missAddr[i]   <= 32'b0;
+      instrAddr[i]  <= 32'b0;
+    end
   end else if (readyIn) begin
     if (clearReg) begin
       clearReg           <= 1'b0;

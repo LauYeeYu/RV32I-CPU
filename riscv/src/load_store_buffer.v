@@ -143,10 +143,14 @@ always @(posedge clockIn) begin
     baseHasDep     <= {LSB_SIZE{1'b1}};
     dataHasDep     <= {LSB_SIZE{1'b1}};
     updateRobIdReg <= {ROB_WIDTH{1'b0}};
+    nextRobIdReg   <= {ROB_WIDTH{1'b0}};
+    processOpReg   <= {LSB_OP_WIDTH{1'b0}};
     accessTypeReg  <= 2'b00;
     processing     <= 1'b0;
     processOpReg   <= {LSB_OP_WIDTH{1'b0}};
     readWriteReg   <= 1'b1;
+    dataAddrReg    <= 32'b0;
+    dataOutReg     <= 32'b0;
     for (i = 0; i < LSB_SIZE; i = i + 1) begin
       robId[i]          <= {ROB_WIDTH{1'b0}};
       baseAddr[i]       <= 32'b0;

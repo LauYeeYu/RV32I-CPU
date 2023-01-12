@@ -134,20 +134,29 @@ module Cache #(
   // ICache and DCache control logic
   always @(posedge clkIn) begin
     if (resetIn) begin
-      loading              <= 0;
-      resultReady          <= 0;
-      readWrite            <= 1;
-      idle                 <= 0;
-      idleAgain            <= 0;
-      progress             <= 0;
-      mutableReady         <= 0;
-      memReadWrite         <= 1;
-      dcacheMutableInValid <= 0;
-      dataAddrReg          <= 32'b0;
-      accessTypeReg        <= 2'b00;
-      dataReg              <= 32'b0;
-      readWriteReg         <= 1'b0;
-      tag                  <= {(31-BLOCK_WIDTH){1'b0}};
+      loading               <= 0;
+      resultReady           <= 0;
+      readWrite             <= 1;
+      idle                  <= 0;
+      idleAgain             <= 0;
+      progress              <= 0;
+      mutableReady          <= 0;
+      mutableLoading        <= 0;
+      mutableProgress       <= 2'b00;
+      memReadWrite          <= 1;
+      dcacheMutableInValid  <= 0;
+      dcacheMutableWriteSuc <= 0;
+      dataAddrReg           <= 32'b0;
+      accessTypeReg         <= 2'b00;
+      dataReg               <= 32'b0;
+      readWriteReg          <= 1'b0;
+      tag                   <= {(32-BLOCK_WIDTH){1'b0}};
+      buffer                <= {(BLOCK_SIZE*8){1'b0}};
+      icacheMemInValid      <= 0;
+      dcacheMemInValid      <= 0;
+      memOutReg             <= 8'b0;
+      memAddrReg            <= 32'b0;
+      fromICache            <= 0;
     end else if (readyIn) begin
       if (accessType != 2'b00) begin
         dataAddrReg   <= dataAddrIn;

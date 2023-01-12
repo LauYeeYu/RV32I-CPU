@@ -157,10 +157,22 @@ always @(posedge clockIn) begin
     occupied          <= {RS_WIDTH{1'b0}};
     hasDep1           <= {2**RS_WIDTH{1'b1}};
     hasDep2           <= {2**RS_WIDTH{1'b1}};
-    calculating       <= 0;
-    updateValidReg    <= 0;
-    updateValReg      <= 32'b0;
+    calculating       <= 1'b0;
+    v1Cal             <= 32'b0;
+    v2Cal             <= 32'b0;
+    robIdCal          <= {ROB_WIDTH{1'b0}};
+    opCal             <= {RS_OP_WIDTH{1'b0}};
+    updateValidReg    <= 1'b0;
     updateRobIndexReg <= {ROB_WIDTH{1'b0}};
+    updateValReg      <= 32'b0;
+    for (i = 0; i < 2**RS_WIDTH; i = i + 1) begin
+      robIndex[i] <= {ROB_WIDTH{1'b0}};
+      value1[i]   <= 32'b0;
+      constrt1[i] <= {ROB_WIDTH{1'b0}};
+      value2[i]   <= 32'b0;
+      constrt2[i] <= {ROB_WIDTH{1'b0}};
+      op[i]       <= {RS_OP_WIDTH{1'b0}};
+    end
   end else if (readyIn) begin
     if (addValid) begin
       valid    [nextFree] <= 1'b1;

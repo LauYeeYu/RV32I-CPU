@@ -201,17 +201,43 @@ wire [31:0] rs2RealValue = rs2Dirty ?
 always @(posedge clockIn) begin
   robAddIndexReg <= robNext;
   if (resetIn || clearIn) begin
-    PC               <= clearIn ? newPc : 32'b0;
-    stall            <= 1'b0;
-    stallDependency  <= 4'b0000;
-    instrRegValid    <= 1'b0;
-    robAddValidReg   <= 1'b0;
-    robAddReadyReg   <= 1'b0;
-    rsAddValidReg    <= 1'b0;
-    rfUpdateValidReg <= 1'b0;
-    lsbAddValidReg   <= 1'b0;
-    pending          <= 1'b0;
-    jumpReg          <= 1'b0;
+    PC                     <= clearIn ? newPc : 32'b0;
+    instrReg               <= 32'b0;
+    instrAddrReg           <= 32'b0;
+    instrRegValid          <= 1'b0;
+    stall                  <= 1'b0;
+    stallDependency        <= {ROB_WIDTH{1'b0}};
+    pending                <= 1'b0;
+    robAddValidReg         <= 1'b0;
+    robAddIndexReg         <= {ROB_WIDTH{1'b0}};
+    robAddTypeReg          <= {ROB_OP_WIDTH{1'b0}};
+    robAddReadyReg         <= 1'b0;
+    robValueReg            <= 32'b0;
+    robAddrReg             <= 32'b0;
+    robInstrAddrReg        <= 32'b0;
+    jumpReg                <= 1'b0;
+    destReg                <= 5'b00000;
+    rfUpdateValidReg       <= 1'b0;
+    rsAddValidReg          <= 1'b0;
+    rsAddOpReg             <= {RS_OP_WIDTH{1'b0}};
+    rsAddRobIndexReg       <= {ROB_WIDTH{1'b0}};
+    rsAddVal1Reg           <= 32'b0;
+    rsAddHasDep1Reg        <= 1'b0;
+    rsAddConstrt1Reg       <= {ROB_WIDTH{1'b0}};
+    rsAddVal2Reg           <= 32'b0;
+    rsAddHasDep2Reg        <= 1'b0;
+    rsAddConstrt2Reg       <= {ROB_WIDTH{1'b0}};
+    lsbAddValidReg         <= 1'b0;
+    lsbAddReadWriteReg     <= 1'b0;
+    lsbAddRobIdReg         <= {ROB_WIDTH{1'b0}};
+    lsbAddBaseHasDepReg    <= 1'b0;
+    lsbAddBaseReg          <= 32'b0;
+    lsbAddBaseConstrtIdReg <= {ROB_WIDTH{1'b0}};
+    lsbAddOffsetReg        <= 32'b0;
+    lsbAddDataHasDepReg    <= 1'b0;
+    lsbAddDataReg          <= 32'b0;
+    lsbAddDataConstrtIdReg <= {ROB_WIDTH{1'b0}};
+    lsbAddOpReg            <= {LSB_OP_WIDTH{1'b0}};
   end else if (readyIn) begin
     if (stall) begin
       if (robReady) begin

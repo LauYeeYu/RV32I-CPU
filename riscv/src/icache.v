@@ -34,9 +34,14 @@ assign instrOut      = hit ?
                          (blockPos == 2'b10) ? cacheDataLine[95:64] :
                                                cacheDataLine[127:96] : 32'b0;
 
+integer i;
 always @* begin
   if (resetIn) begin
-  cacheValid <= {CACHE_SIZE{1'b0}};
+    cacheValid <= {CACHE_SIZE{1'b0}};
+    for (i=0; i<CACHE_SIZE; i=i+1) begin
+      cacheTag[i]  <= {(32-CACHE_WIDTH-BLOCK_WIDTH){1'b0}};
+      cacheData[i] <= {(BLOCK_SIZE*8){1'b0}};
+    end
   end else if (memDataValid) begin
     cacheValid[memPos] <= 1'b1;
     cacheTag  [memPos] <= memAddr[31:CACHE_WIDTH+BLOCK_WIDTH];

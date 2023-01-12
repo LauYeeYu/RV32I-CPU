@@ -26,6 +26,7 @@ always @(posedge clockIn) begin
     for (i = 0; i < LOCAL_SIZE; i = i + 1) begin
       localHistory[i] <= 2'b01;
     end
+    instrPosReg <= {LOCAL_WIDTH{1'b0}};
   end else if (readyIn) begin
     instrPosReg <= instrPos;
     if (updateValid) begin
