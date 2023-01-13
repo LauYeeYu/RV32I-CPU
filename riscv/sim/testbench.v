@@ -26,8 +26,10 @@ initial begin
 end
 
 initial begin
+`ifdef DEBUG
      $dumpfile("test.vcd");
      $dumpvars(0, testbench);
+`endif // DEBUG
      #300000000 $finish;
 end
 

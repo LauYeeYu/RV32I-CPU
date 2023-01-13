@@ -249,7 +249,9 @@ always @*
               d_tx_data = io_din;
               d_wr_en   = 1'b1;
             end
+`ifndef DEBUG
             $write("%c", io_din);
+`endif // DEBUG
           end
           3'h04: begin      // 0x30004 write: indicates program stop
             if (!tx_full) begin
@@ -258,7 +260,9 @@ always @*
             end
             d_state = S_DECODE; 
             d_program_finish = 1'b1;
+`ifndef DEBUG
             $display("IO:Return");
+`endif // DEBUG
             $finish;
           end
         endcase
