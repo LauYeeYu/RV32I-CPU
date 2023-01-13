@@ -27,10 +27,10 @@ end
 
 initial begin
 `ifdef DEBUG
-     $dumpfile("test.vcd");
-     $dumpvars(0, testbench);
+  $dumpfile("test.vcd");
+  $dumpvars(0, testbench);
 `endif // DEBUG
-     #300000000 $finish;
+  #300000000 $finish;
 end
 
 endmodule
