@@ -87,7 +87,7 @@ reg  [ROB_WIDTH-1:0]    endIndex;
 reg  [ROB_SIZE-1:0]     valid;
 reg  [ROB_SIZE-1:0]     ready;
 reg  [ROB_SIZE-1:0]     jump;
-reg  [ROB_OP_WIDTH-1:0] type[ROB_SIZE-1:0];
+reg  [ROB_OP_WIDTH-1:0] op[ROB_SIZE-1:0];
 reg  [31:0]             value[ROB_SIZE-1:0];
 reg  [4:0]              destReg[ROB_SIZE-1:0];
 reg  [31:0]             missAddr[ROB_SIZE-1:0];
@@ -95,7 +95,7 @@ reg  [31:0]             instrAddr[ROB_SIZE-1:0];
 wire                    topValid     = valid[beginIndex];
 wire                    topReady     = ready[beginIndex];
 wire                    topJump      = jump[beginIndex];
-wire [ROB_OP_WIDTH-1:0] topType      = type[beginIndex];
+wire [ROB_OP_WIDTH-1:0] topOp      = op[beginIndex];
 wire [31:0]             topValue     = value[beginIndex];
 wire [4:0]              topDestReg   = destReg[beginIndex];
 wire [31:0]             topMissAddr  = missAddr[beginIndex];
@@ -103,8 +103,8 @@ wire [31:0]             topInstrAddr = instrAddr[beginIndex];
 wire                    wrongBranch  = (topJump != topValue[0]);
 
 wire notEmpty = (beginIndex != endIndex);
-wire needUpdateReg = notEmpty && (topType == 2'b00) && topReady;
-wire nextPredictUpdValid = notEmpty && (topType == 2'b01) && topReady;
+wire needUpdateReg = notEmpty && (topOp == 2'b00) && topReady;
+wire nextPredictUpdValid = notEmpty && (topOp == 2'b01) && topReady;
 
 wire [ROB_WIDTH-1:0] endIndexPlusThree = endIndex + 2'd3;
 wire [ROB_WIDTH-1:0] endIndexPlusTwo   = endIndex + 2'd2;
@@ -155,7 +155,7 @@ always @(posedge clockIn) begin
     robBeginIdReg      <= {ROB_WIDTH{1'b0}};
     beginValidReg      <= 1'b0;
     for (i = 0; i < ROB_SIZE; i = i + 1) begin
-      type[i]       <= {ROB_OP_WIDTH{1'b0}};
+      op[i]         <= {ROB_OP_WIDTH{1'b0}};
       value[i]      <= 32'b0;
       destReg[i]    <= 5'b0;
       missAddr[i]   <= 32'b0;
@@ -176,7 +176,7 @@ always @(posedge clockIn) begin
         valid    [addIndex] <= 1'b1;
         ready    [addIndex] <= addReady;
         jump     [addIndex] <= addJump;
-        type     [addIndex] <= addType;
+        op       [addIndex] <= addType;
         value    [addIndex] <= addValue;
         destReg  [addIndex] <= addDest;
         missAddr [addIndex] <= addAddr;
@@ -198,7 +198,7 @@ always @(posedge clockIn) begin
         beginValidReg      <= 1'b1;
         regUpdateValidReg  <= needUpdateReg;
         predictUpdValidReg <= nextPredictUpdValid;
-        case (topType)
+        case (topOp)
           2'b00: begin // register write
             if (topReady) begin
 `ifdef PRINT_REG_CHANGE
