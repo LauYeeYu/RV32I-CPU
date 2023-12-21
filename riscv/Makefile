@@ -1,43 +1,62 @@
-prefix = $(shell pwd)
-# Folder Path
-src = $(prefix)/src
-testspace = $(prefix)/testspace
+RISCV_TOOLCHAIN = /opt/riscv
+RISCV_VERSION = $(shell ls $(RISCV_TOOLCHAIN)/lib/gcc/riscv32-unknown-elf/)
+RISCV_BIN_PREFIX = $(addsuffix /bin/riscv32-unknown-elf-, $(RISCV_TOOLCHAIN))
+RISCV_LIB = $(addsuffix /riscv32-unknown-elf/lib/, $(RISCV_TOOLCHAIN))
+RISCV_GCC_LIB = $(addsuffix $(addprefix /lib/gcc/riscv32-unknown-elf/, $(RISCV_VERSION)), $(RISCV_TOOLCHAIN))
 
-sim_testcase = $(prefix)/testcase/sim
-fpga_testcase = $(prefix)/testcase/fpga
+SRC = src
+TESTSPACE = testspace
+SIM_TESTCASE = testcase/sim
+FPGA_TESTCASE = testcase/fpga
+SIM = sim
+SYS = sys
 
-sim = $(prefix)/sim
-riscv_toolchain = /opt/riscv
-riscv_bin = $(riscv_toolchain)/bin
-sys = $(prefix)/sys
+SRC_FILES = $(shell find $(SRC) -name '*.v')
+SRC_HEADERS = $(shell find $(SRC) -name '*.vh')
+SIM_FILES = $(shell find $(SIM) -name '*.v')
+SYS_FILES = $(shell find $(SYS) -name '*.h')
+TESTCASE = $(shell cd "$(SIM_TESTCASE)" && ls *$(name)*.c)
 
+.PHONY: _no_testcase_name_check
 _no_testcase_name_check:
 	@$(if $(strip $(name)),, echo 'Missing Testcase Name')
 	@$(if $(strip $(name)),, exit 1)
 
 # All build result are put at testspace
-build_sim:
-	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.v
+.PHONY: build_sim
+build_sim: $(SIM)/testbench.v $(SRC_FILES) $(SRC_HEADERS)
+	iverilog -o $(TESTSPACE)/test $(VERILOG_FLAGS) $^
 
-build_sim_debug:
-	@cd $(src) && iverilog -o $(testspace)/test -DDEBUG $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.v
+$(SYS)/rom.o: $(SYS)/rom.s
+	$(RISCV_BIN_PREFIX)as -o $@ -march=rv32i $^
 
-build_sim_test: _no_testcase_name_check
-	@$(riscv_bin)/riscv32-unknown-elf-as -o $(sys)/rom.o -march=rv32i $(sys)/rom.s
-	@cp $(sim_testcase)/*$(name)*.c $(testspace)/test.c
-	@$(riscv_bin)/riscv32-unknown-elf-gcc -o $(testspace)/test.o -DSIM -I $(sys) -c $(testspace)/test.c -O2 -march=rv32i -mabi=ilp32 -Wall
-	@$(riscv_bin)/riscv32-unknown-elf-ld -T $(sys)/memory.ld $(sys)/rom.o $(testspace)/test.o -L $(riscv_toolchain)/riscv32-unknown-elf/lib/ -L $(riscv_toolchain)/lib/gcc/riscv32-unknown-elf/10.1.0/ -lc -lgcc -lm -lnosys -o $(testspace)/test.om
-	@$(riscv_bin)/riscv32-unknown-elf-objcopy -O verilog $(testspace)/test.om $(testspace)/test.data
-	@$(riscv_bin)/riscv32-unknown-elf-objdump -D $(testspace)/test.om > $(testspace)/test.dump
+$(TESTSPACE)/test.c: $(SIM_TESTCASE)/$(TESTCASE)
+	cp $< $@
 
-run_sim:
-	@cd $(testspace) && ./test
+$(TESTSPACE)/test.o: $(TESTSPACE)/test.c $(SYS_FILES)
+	$(RISCV_BIN_PREFIX)gcc -o $@ -DSIM -I $(SYS) -c $< -O2 -march=rv32i -mabi=ilp32 -Wall
 
-clear:
-	@rm $(sys)/rom.o $(testspace)/test*
+$(TESTSPACE)/test.om: sys/memory.ld testspace/test.o sys/rom.o
+	$(RISCV_BIN_PREFIX)ld -T $^ -L $(RISCV_LIB) -L $(RISCV_GCC_LIB) -lc -lgcc -lm -lnosys -o $@
 
-test_sim: build_sim build_sim_test run_sim
+.precious: $(TESTSPACE)/test.data
+$(TESTSPACE)/test.data: $(TESTSPACE)/test.om
+	$(RISCV_BIN_PREFIX)objcopy -O verilog $< $@
 
-test_sim_debug: build_sim_debug build_sim_test run_sim
+.precious: $(TESTSPACE)/test.dump
+$(TESTSPACE)/test.dump: $(TESTSPACE)/test.om
+	$(RISCV_BIN_PREFIX)objdump -D $< > $@
 
-.PHONY: _no_testcase_name_check build_sim build_sim_test run_sim clear test_sim
+.PHONY: build_sim_test
+build_sim_test: _no_testcase_name_check clean build_sim $(TESTSPACE)/test.data $(TESTSPACE)/test.dump
+
+run_sim: build_sim_test
+	@echo "------------------ Running Testcase $(TESTCASE) ------------------"
+	@cd $(TESTSPACE) && ./test
+
+.PHONY: clean
+clean:
+	rm -f $(SYS)/rom.o $(TESTSPACE)/test*
+
+.PHONY: test_sim
+test_sim: run_sim
