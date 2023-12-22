@@ -1,0 +1,4 @@
+*.o
+*.om
+*.data
+*.dump

@@ -15,7 +15,11 @@ SRC_FILES = $(shell find $(SRC) -name '*.v')
 SRC_HEADERS = $(shell find $(SRC) -name '*.vh')
 SIM_FILES = $(shell find $(SIM) -name '*.v')
 SYS_FILES = $(shell find $(SYS) -name '*.h')
-TESTCASE = $(shell cd "$(SIM_TESTCASE)" && ls *$(name)*.c)
+TESTCASE_C = $(shell ls $(SIM_TESTCASE)/*$(name)*.c)
+TESTCASE_O = $(TESTCASE_C:.c=.o)
+TESTCASE_OM = $(TESTCASE_C:.c=.om)
+TESTCASE_DATA = $(TESTCASE_C:.c=.data)
+TESTCASE_DUMP = $(TESTCASE_C:.c=.dump)
 
 .PHONY: _no_testcase_name_check
 _no_testcase_name_check:
@@ -30,25 +34,30 @@ build_sim: $(SIM)/testbench.v $(SRC_FILES) $(SRC_HEADERS)
 $(SYS)/rom.o: $(SYS)/rom.s
 	$(RISCV_BIN_PREFIX)as -o $@ -march=rv32i $^
 
-$(TESTSPACE)/test.c: $(SIM_TESTCASE)/$(TESTCASE)
-	cp $< $@
-
-$(TESTSPACE)/test.o: $(TESTSPACE)/test.c $(SYS_FILES)
+.precious: %.o
+%.o: %.c $(SYS_FILES)
 	$(RISCV_BIN_PREFIX)gcc -o $@ -DSIM -I $(SYS) -c $< -O2 -march=rv32i -mabi=ilp32 -Wall
 
-$(TESTSPACE)/test.om: sys/memory.ld testspace/test.o sys/rom.o
+.precious: %.om
+%.om: sys/memory.ld %.o sys/rom.o
 	$(RISCV_BIN_PREFIX)ld -T $^ -L $(RISCV_LIB) -L $(RISCV_GCC_LIB) -lc -lgcc -lm -lnosys -o $@
 
-.precious: $(TESTSPACE)/test.data
-$(TESTSPACE)/test.data: $(TESTSPACE)/test.om
+.precious: %.data
+%.data: %.om
 	$(RISCV_BIN_PREFIX)objcopy -O verilog $< $@
 
 .precious: $(TESTSPACE)/test.dump
-$(TESTSPACE)/test.dump: $(TESTSPACE)/test.om
+%.dump: %.om
 	$(RISCV_BIN_PREFIX)objdump -D $< > $@
 
+.PHONY: move_testcase
+move_testcase: $(TESTCASE_OM) $(TESTCASE_DATA) $(TESTCASE_DUMP)
+	cp $(TESTCASE_OM) $(TESTSPACE)/test.om
+	cp $(TESTCASE_DATA) $(TESTSPACE)/test.data
+	cp $(TESTCASE_DUMP) $(TESTSPACE)/test.dump
+
 .PHONY: build_sim_test
-build_sim_test: _no_testcase_name_check clean build_sim $(TESTSPACE)/test.data $(TESTSPACE)/test.dump
+build_sim_test: _no_testcase_name_check build_sim move_testcase
 
 run_sim: build_sim_test
 	@echo "------------------ Running Testcase $(TESTCASE) ------------------"
@@ -56,7 +65,7 @@ run_sim: build_sim_test
 
 .PHONY: clean
 clean:
-	rm -f $(SYS)/rom.o $(TESTSPACE)/test*
+	rm -f $(SYS)/rom.o $(TESTSPACE)/test* $(SIM_TESTCASE)/*.om $(SIM_TESTCASE)/*.o $(SIM_TESTCASE)/*.data $(SIM_TESTCASE)/*.dump
 
 .PHONY: test_sim
 test_sim: run_sim
